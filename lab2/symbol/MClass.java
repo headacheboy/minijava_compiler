@@ -86,16 +86,18 @@ public class MClass extends MIdentifier
         return mMethodVec.get(i);
     }
 
-    public int getMethodClassPos(MClassList mClassList, String name, MClass whichClass)
+    public Vector<Object> getMethodClassPos(String name)
     {
+        Vector<Object> retVec = new Vector();
         MClass tmpClass = this;
         int ret = 0;
         while (true)
         {
             if (tmpClass.getMethod(name) != null)
             {
-                whichClass = mClassList.getClass(tmpClass.getName());
-                return ret * 4;
+                retVec.add(4*ret);
+                retVec.add(tmpClass);
+                return retVec;
             }
             ret += tmpClass.mVarVec.size()+1;
             tmpClass = tmpClass.getParentClass();

@@ -4,6 +4,7 @@ import syntaxtree.*;
 import java.io.*;
 import print.*;
 import java.util.HashMap;
+import java.util.Vector;
 
 public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
 {
@@ -573,7 +574,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         MType _ret=null;
         MIdentifier mIdentifier;
         MMethod thisMethod;
-        MClass thisClass, whichClass=null;
+        MClass thisClass, whichClass;
         int vTableNum = tmpNumber++;
         int dTableNum = tmpNumber++;
         int tNum = tmpNumber++;
@@ -589,8 +590,10 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
 
         mIdentifier = (MIdentifier)n.f2.accept(this, argu);
 
-        PigletPrint.println("HLOAD TEMP "+tNum+" TEMP "+vTableNum+" "+thisClass.getMethodClassPos(mClassList,
-                mIdentifier.getName(), whichClass));     //抽出对应的DTable
+        Vector<Object> tmpV = thisClass.getMethodClassPos(mIdentifier.getName());
+        whichClass = (MClass)tmpV.get(1);
+
+        PigletPrint.println("HLOAD TEMP "+tNum+" TEMP "+vTableNum+" "+tmpV.get(0).toString());     //抽出对应的DTable
         PigletPrint.println("HLOAD TEMP "+dTableNum+" TEMP "+tNum+" "+whichClass.getMethodPos(mIdentifier.getName()));
         PigletPrint.printReturn();
         PigletPrint.println("TEMP "+dTableNum);
