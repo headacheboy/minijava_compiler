@@ -118,7 +118,7 @@ public class MClass extends MIdentifier
         return -1;
     }
 
-    public int getVarPos(MClassList mClassList, String name)
+    public int getVarPos(String name)
     {
         //获取name变量在class的哪个位置，注意如果是父类的变量，则需要往上寻找
         //类实例表的结构为：先dtable，再属性，若有父类，则父类按照同样的规则接在当前vtable后

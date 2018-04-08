@@ -325,7 +325,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         }
         else    //是类变量，则从传进来的类实例表(TEMP 0)里获取相应的位置，默认int，boolean，array都是4个字节
         {
-            PigletPrint.print("HSTORE TEMP 0 "+thisClass.getVarPos(mClassList, name)+" ");
+            PigletPrint.print("HSTORE TEMP 0 "+thisClass.getVarPos(name)+" ");
         }
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -345,13 +345,28 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
      */
     public MType visit(ArrayAssignmentStatement n, MType argu) {
         MType _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        int arrNum = tmpNumber++;
+        int exp1 = tmpNumber++;
+        MIdentifier identifier = (MIdentifier)n.f0.accept(this, argu);
+        String name = identifier.getName();
+        MMethod thisMethod = (MMethod)argu;
+        MClass thisClass = thisMethod.owner;
+        if (thisMethod.hasVar(name))    //是临时变量
+        {
+            PigletPrint.println("MOVE TEMP "+arrNum+" TEMP "+getNumber(thisMethod, name));
+        }
+        else    //是类变量，将临时变量or类变量统一到一个TEMP里方便操作
+        {
+            PigletPrint.println("HLOAD TEMP "+arrNum+" TEMP 0 "+thisClass.getVarPos(name)+" ");
+        }
+        PigletPrint.print("MOVE TEMP "+exp1+" ");
         n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
-        n.f4.accept(this, argu);
+        PigletPrint.println("");
+        PigletPrint.println("MOVE TEMP "+arrNum+" PLUS TEMP "+arrNum+" TIMES 4 PLUS 1 TEMP "+exp1);
+        // arrNum = arrNum + 4*(1+exp1) 多出来的1是数组长度
+        PigletPrint.print("HSTORE TEMP "+arrNum+" 0 ");
         n.f5.accept(this, argu);
-        n.f6.accept(this, argu);
+        PigletPrint.println("");
         return _ret;
     }
 
@@ -540,10 +555,21 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
      */
     public MType visit(ArrayLookup n, MType argu) {
         MType _ret=null;
+        int arrayNum = tmpNumber++;
+        int exp1 = tmpNumber++;
+        int retNum = tmpNumber++;
+        PigletPrint.printBegin();
+        PigletPrint.print("MOVE TEMP "+arrayNum+" ");
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        PigletPrint.println("");
+        PigletPrint.print("MOVE TEMP "+exp1+" ");
         n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
+        PigletPrint.println("");
+        PigletPrint.print("HLOAD TEMP "+retNum+" PLUS TEMP "+arrayNum+" TIMES 4 PLUS 1 TEMP "+exp1+" 0");
+        // retNum = *arrayNum+4*(1+exp1) 因为HLOAD规定最后一个只能是integer_literal
+        PigletPrint.printReturn();
+        PigletPrint.println("TEMP "+retNum);
+        PigletPrint.printEnd();
         return _ret;
     }
 
@@ -554,9 +580,17 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
      */
     public MType visit(ArrayLength n, MType argu) {
         MType _ret=null;
+        int tNum = tmpNumber++;
+        int retNum = tmpNumber++;
+        MIdentifier mIdentifier;
+        PigletPrint.printBegin();
+        PigletPrint.print("MOVE TEMP "+tNum+" ");
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        PigletPrint.println("");
+        PigletPrint.println("HLOAD TEMP "+retNum+" TEMP "+tNum+" 0");
+        PigletPrint.printReturn();
+        PigletPrint.println("TEMP "+retNum);
+        PigletPrint.printEnd();
         return _ret;
     }
 
@@ -659,7 +693,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
             {
                 int tNum = tmpNumber++;
                 PigletPrint.printBegin();
-                PigletPrint.println("HLOAD TEMP "+tNum+" TEMP 0 "+thisClass.getVarPos(mClassList, name));
+                PigletPrint.println("HLOAD TEMP "+tNum+" TEMP 0 "+thisClass.getVarPos(name));
                 PigletPrint.printReturn();
                 PigletPrint.print("TEMP "+tNum);
                 PigletPrint.printEnd();
@@ -725,12 +759,20 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
      * f3 -> Expression()
      * f4 -> "]"
      */
+    //  要维护一个数组长度，放在数组最开始
     public MType visit(ArrayAllocationExpression n, MType argu) {
         MType _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        int exp = tmpNumber++;
+        int arrNum = tmpNumber++;
+        PigletPrint.printBegin();
+        PigletPrint.print("MOVE TEMP "+exp+" ");
         n.f3.accept(this, argu);
+        PigletPrint.println("");
+        PigletPrint.println("MOVE TEMP "+arrNum+" HALLOCATE TIMES 4 PLUS 1 TEMP "+exp);
+        PigletPrint.println("HSTORE TEMP "+arrNum+" 0 TEMP "+exp);  //维护数组长度，所以上面也还要PLUS 1
+        PigletPrint.printReturn();
+        PigletPrint.println("TEMP "+arrNum);
+        PigletPrint.printEnd();
         n.f4.accept(this, argu);
         return _ret;
     }
