@@ -15,7 +15,7 @@ public class MClass extends MIdentifier
     //此外，继承的MIdentifier的typeName，默认是Class
     public MClass(int l, int c, String n, String p)
     {
-        super(l, c, "class", n);
+        super(l, c, n, n);
         parent = p;
     }
 
