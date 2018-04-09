@@ -339,9 +339,8 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
             }
             else
             {
-                iNum -= 18;
                 tNum = tmpNumber++;
-                PigletPrint.println("HLOAD TEMP "+tNum+" TEMP 19 "+iNum);    //取出，赋值再插入
+                PigletPrint.println("HLOAD TEMP "+tNum+" TEMP 19 "+(iNum-18));    //取出，赋值再插入
             }
         }
         else    //是类变量，则从传进来的类实例表(TEMP 0)里获取相应的位置，默认int，boolean，array都是4个字节
@@ -353,9 +352,9 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         if (expIdentifier != null)
             thisVar.rType = expIdentifier.getType();    //修改运行时类型
         PigletPrint.println("");
-        if (thisMethod.hasPara(name) && iNum >= 0)
+        if (thisMethod.hasPara(name) && iNum >= 18)
         {
-            PigletPrint.println("HSTORE TEMP 19 "+iNum+" TEMP "+tNum);
+            PigletPrint.println("HSTORE TEMP 19 "+(iNum-18)+" TEMP "+tNum);
         }
         return _ret;
     }
@@ -503,13 +502,13 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         int lNum = labelNumber++;   //跳转的RETURN的label
         PigletPrint.printBegin();
         PigletPrint.println("MOVE TEMP "+tNum+" 0");
-        PigletPrint.print("CJMP ");
+        PigletPrint.print("CJUMP ");
         n.f0.accept(this, argu);
         PigletPrint.println("L"+lNum);  //若f0是0则直接return 0
         n.f1.accept(this, argu);
         PigletPrint.print("MOVE TEMP "+tNum+" ");
         n.f2.accept(this, argu);        //否则，f2是什么赋值给返回值什么
-        PigletPrint.print("L"+lNum+" ");
+        PigletPrint.println("L"+lNum+" NOOP"); //为了防止 Label 后面直接跟Return不符合语法定义
         PigletPrint.printReturn();
         PigletPrint.println("TEMP "+tNum);
         PigletPrint.printEnd();
@@ -645,14 +644,15 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
                                                             // 这里传下去的是b，如果是new A().a的话，是new A()
         PigletPrint.println("");
 
+
         if (mIdentifier.getLine() == -2 && mIdentifier.getColumn() == -2)   // new A().a()
         {
             thisClass = mClassList.getClass(mIdentifier.getType());
         }
-        else if (mIdentifier.getLine() == -1 && mIdentifier.getColumn() == -1)
+        else if (mIdentifier instanceof MClass)
         {
             // this.xxx
-            thisClass = mClassList.getClass(mIdentifier.getName());
+            thisClass = (MClass) mIdentifier;
         }
         else
         {
@@ -675,7 +675,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         PigletPrint.print("(TEMP "+vTableNum+" ");
         n.f4.accept(this, argu);
         PigletPrint.println(")");
-        return _ret;
+        return mClassList.getClass(callingMethod.getType());
     }
 
     /**
@@ -757,16 +757,16 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
     public MType visit(PrimaryExpression n, MType argu) {
         MType _ret=null;
         MType f0 = n.f0.accept(this, argu);
+        if (f0 instanceof MClass)
+        {
+            // thisExpression
+            return f0;
+        }
         if (f0 instanceof MIdentifier) // 是identifier的情况
         {
             if (((MIdentifier)f0).getLine() == -2 && ((MIdentifier)f0).getColumn() == -2)
             {
                 // 是allocationExpression
-                return f0;
-            }
-            if (((MIdentifier)f0).getLine() == -1 && ((MIdentifier)f0).getColumn() == -1)
-            {
-                // 是thisExpression
                 return f0;
             }
             MIdentifier identifier = (MIdentifier)f0;
@@ -857,7 +857,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
     public MType visit(ThisExpression n, MType argu) {
         MType _ret=null;
         PigletPrint.print("TEMP 0");
-        _ret = new MIdentifier(-1, -1, ((MMethod)argu).owner.getType(), ((MMethod)argu).owner.getName());
+        _ret = ((MMethod)argu).owner;
         return _ret;
     }
 
@@ -949,10 +949,8 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
      * f2 -> ")"
      */
     public MType visit(BracketExpression n, MType argu) {
-        MType _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        MType _ret;
+        _ret = n.f1.accept(this, argu);
         return _ret;
     }
 }
