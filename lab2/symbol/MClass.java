@@ -10,12 +10,29 @@ public class MClass extends MIdentifier
     public Vector<MMethod> mMethodVec = new Vector<MMethod>();
     private String parent;  //父类，可以为NULL，即默认的Object父类
     private MClass parentClass;
+    public int allocNum = -1; //描述这个类需要占用的大小（加上父类的东西），是4的倍数
     
     //此外，继承的MIdentifier的typeName，默认是Class
     public MClass(int l, int c, String n, String p)
     {
         super(l, c, "class", n);
         parent = p;
+    }
+
+    public int calAllocNum()
+    {
+        if (allocNum != -1)
+            return allocNum;
+        if (parentClass == null)
+        {
+            allocNum = 4*(1+mVarVec.size());
+            return allocNum;
+        }
+        else
+        {
+            allocNum = 4*(1+mVarVec.size())+parentClass.calAllocNum();
+            return allocNum;
+        }
     }
     
     public boolean insertVar(MVar mVar)

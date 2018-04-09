@@ -132,6 +132,16 @@ public class MClassList extends MType
         }
     }
 
+    public void updateClassAllocNum()
+    {
+        // 将类需要的实例表大小存好
+        for (String s:mClasses.keySet())
+        {
+            MClass tmpClass = mClasses.get(s);
+            tmpClass.calAllocNum();
+        }
+    }
+
     //测试用，输出class，method和variable
     public boolean print()
     {

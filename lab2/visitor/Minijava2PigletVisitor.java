@@ -340,7 +340,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
             else
             {
                 tNum = tmpNumber++;
-                PigletPrint.println("HLOAD TEMP "+tNum+" TEMP 19 "+(iNum-18));    //取出，赋值再插入
+                PigletPrint.println("HLOAD TEMP "+tNum+" TEMP 19 "+4*(iNum-18));    //取出，赋值再插入
             }
         }
         else    //是类变量，则从传进来的类实例表(TEMP 0)里获取相应的位置，默认int，boolean，array都是4个字节
@@ -354,7 +354,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         PigletPrint.println("");
         if (thisMethod.hasPara(name) && iNum >= 18)
         {
-            PigletPrint.println("HSTORE TEMP 19 "+(iNum-18)+" TEMP "+tNum);
+            PigletPrint.println("HSTORE TEMP 19 "+4*(iNum-18)+" TEMP "+tNum);
         }
         return _ret;
     }
@@ -667,6 +667,8 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         callingMethod = whichClass.getMethod(mIdentifier.getName());
         para = callingMethod.getParaNum();
 
+        PigletPrint.println("MOVE TEMP "+vTableNum+" PLUS "+tmpV.get(0).toString()+" TEMP "+vTableNum);
+
         PigletPrint.println("HLOAD TEMP "+tNum+" TEMP "+vTableNum+" "+tmpV.get(0).toString());     //抽出对应的DTable
         PigletPrint.println("HLOAD TEMP "+dTableNum+" TEMP "+tNum+" "+whichClass.getMethodPos(mIdentifier.getName()));
         PigletPrint.printReturn();
@@ -716,7 +718,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
                 paraAddr = tNum;
             }
             int exceedNum = paraNum-19;
-            PigletPrint.print("HSTORE TEMP "+paraAddr+" "+exceedNum+" ");
+            PigletPrint.print("HSTORE TEMP "+paraAddr+" "+4*exceedNum+" ");
             n.f1.accept(this, argu);
             PigletPrint.println("");
             if (paraNum == para)
@@ -791,7 +793,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
                     num -= 18;
                     int tNum = tmpNumber++;
                     PigletPrint.printBegin();
-                    PigletPrint.println("HLOAD TEMP "+tNum+" TEMP 19 "+num);
+                    PigletPrint.println("HLOAD TEMP "+tNum+" TEMP 19 "+4*num);
                     PigletPrint.printReturn();
                     PigletPrint.println("TEMP "+tNum);
                     PigletPrint.printEnd();
@@ -803,7 +805,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
                 PigletPrint.printBegin();
                 PigletPrint.println("HLOAD TEMP "+tNum+" TEMP 0 "+thisClass.getVarPos(name));
                 PigletPrint.printReturn();
-                PigletPrint.print("TEMP "+tNum);
+                PigletPrint.println("TEMP "+tNum);
                 PigletPrint.printEnd();
             }
             return f0;
@@ -903,26 +905,36 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
 
-        int dTableNum = tmpNumber++;
+        int dTableNum, hasAllocNum = 0; // dTable地址，已经在vTable中分配了的地址
         int vTableNum = tmpNumber++;
         PigletPrint.printBegin();
-        // 分配DTable
-        PigletPrint.println("MOVE TEMP "+dTableNum+" HALLOCATE "+(4*thisClass.mMethodVec.size()));
-        for (int i = 0; i < thisClass.mMethodVec.size(); ++i)
+        // 把vTable地址放好
+        PigletPrint.println("MOVE TEMP "+vTableNum+" HALLOCATE "+thisClass.allocNum);
+        while (thisClass != null)
         {
-            PigletPrint.println("HSTORE TEMP "+dTableNum+" "+4*i+" "+thisClass.getName()+"_"+
-                    thisClass.getMethod(i).getName());
-        }
-        // 分配VTable
-        PigletPrint.println("MOVE TEMP "+vTableNum+" HALLOCATE "+(4*(thisClass.mVarVec.size()+1)));
-        PigletPrint.println("HSTORE TEMP "+vTableNum+" 0 "+"TEMP "+dTableNum);   //存放dTable地址
-        for (int i = 0; i < thisClass.mVarVec.size(); ++i)
-        {
-            PigletPrint.println("HSTORE TEMP "+vTableNum+" "+4*(i+1)+" 0"); // 为类变量全部初始化为0
+            // 分配当前类的dTable
+            dTableNum = tmpNumber++;
+            PigletPrint.println("MOVE TEMP "+dTableNum+" HALLOCATE "+(4*thisClass.mMethodVec.size()));
+            for (int i = 0; i < thisClass.mMethodVec.size(); ++i)
+            {
+                PigletPrint.println("HSTORE TEMP "+dTableNum+" "+4*i+" "+thisClass.getName()+"_"+
+                        thisClass.getMethod(i).getName());
+            }
+            PigletPrint.println("HSTORE TEMP "+vTableNum+" "+4*hasAllocNum+" TEMP "+dTableNum);
+            hasAllocNum++;
+            // dTable放入vTable相应位置
+            int len = thisClass.mVarVec.size();
+            for (int i = hasAllocNum; i < hasAllocNum+len; ++i)
+            {
+                PigletPrint.println("HSTORE TEMP "+vTableNum+" "+4*(i)+" 0"); // 为类变量全部初始化为0
+            }
+            hasAllocNum += len;
+            thisClass = thisClass.getParentClass();
         }
         PigletPrint.printReturn();
         PigletPrint.println("TEMP "+vTableNum);
         PigletPrint.printEnd();
+
         _ret = new MIdentifier(-2, -2, mIdentifier.getName(), mIdentifier.getName());   // -2 -2 代表返回的是
         // allocation Expression
         return _ret;

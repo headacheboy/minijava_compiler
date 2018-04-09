@@ -13,6 +13,7 @@ public class Main
             MClassList allClassList = new MClassList();
             root.accept(new BuildSymbolTableVisitor(), allClassList); //把符号表插入到allClassList中
             allClassList.updateParentClass();
+            allClassList.updateClassAllocNum();
             root.accept(new Minijava2PigletVisitor(), allClassList);  //
         }
         catch(Exception e)
