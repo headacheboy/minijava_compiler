@@ -78,6 +78,13 @@ public class MMethod extends MIdentifier
         return owner.getVarType(name);
     }
 
+    public boolean hasPara(String name)
+    {
+        if (mPara.containsKey(name))
+            return true;
+        return false;
+    }
+
     public boolean hasVar(String name)
     {
         if (tmpVar.containsKey(name))

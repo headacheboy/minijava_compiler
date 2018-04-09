@@ -46,6 +46,5 @@ public class PigletPrint {
     public static void printMethod(String className, String methodName, int paraNum)
     {
         println(className+"_"+methodName+"["+paraNum+"]");
-        tabNum++;
     }
 }

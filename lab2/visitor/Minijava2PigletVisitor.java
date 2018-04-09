@@ -15,6 +15,11 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
     //记录现在用到了TEMP 多少
     private int labelNumber = 0;
     //记录现在用到了L 多少
+    private int paraNum = 0;
+    //记录参数有多少个了
+    private int para;
+    //记录总参数有多少个
+    private int paraAddr;
 
     private String getNumber(MMethod thisMethod, String name)
     {
@@ -314,23 +319,44 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
     //判断Identifier是一个临时变量还是一个类变量，当前argu是method
     public MType visit(AssignmentStatement n, MType argu) {
         MType _ret=null;
+        int iNum=-1, tNum=-1;
         MIdentifier identifier = (MIdentifier)n.f0.accept(this, argu);
         String name = identifier.getName();
         MMethod thisMethod = (MMethod)argu;
         MClass thisClass = thisMethod.owner;
+        MVar thisVar = (MVar)thisMethod.getVarType(name);
         if (thisMethod.hasVar(name))    //是临时变量
         {
             String num = getNumber(thisMethod, name);
             PigletPrint.print("MOVE TEMP "+num+" ");
+        }
+        else if (thisMethod.hasPara(name)) //是参数
+        {
+            iNum = thisMethod.getParaIdx(name);
+            if (iNum < 18)
+            {
+                PigletPrint.print("MOVE TEMP "+(iNum+1)+" ");    //直接赋值
+            }
+            else
+            {
+                iNum -= 18;
+                tNum = tmpNumber++;
+                PigletPrint.println("HLOAD TEMP "+tNum+" TEMP 19 "+iNum);    //取出，赋值再插入
+            }
         }
         else    //是类变量，则从传进来的类实例表(TEMP 0)里获取相应的位置，默认int，boolean，array都是4个字节
         {
             PigletPrint.print("HSTORE TEMP 0 "+thisClass.getVarPos(name)+" ");
         }
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        MIdentifier expIdentifier = (MIdentifier)n.f2.accept(this, argu);
+        if (expIdentifier != null)
+            thisVar.rType = expIdentifier.getType();    //修改运行时类型
         PigletPrint.println("");
-        n.f3.accept(this, argu);
+        if (thisMethod.hasPara(name) && iNum >= 0)
+        {
+            PigletPrint.println("HSTORE TEMP 19 "+iNum+" TEMP "+tNum);
+        }
         return _ret;
     }
 
@@ -461,8 +487,8 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
      *       | PrimaryExpression()
      */
     public MType visit(Expression n, MType argu) {
-        MType _ret=null;
-        n.f0.accept(this, argu);
+        MType _ret;
+        _ret = n.f0.accept(this, argu);
         return _ret;
     }
 
@@ -607,7 +633,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
     public MType visit(MessageSend n, MType argu) {
         MType _ret=null;
         MIdentifier mIdentifier;
-        MMethod thisMethod;
+        MMethod thisMethod, callingMethod;
         MClass thisClass, whichClass;
         int vTableNum = tmpNumber++;
         int dTableNum = tmpNumber++;
@@ -615,17 +641,31 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         PigletPrint.println("CALL");
         PigletPrint.printBegin();
         PigletPrint.print("MOVE TEMP "+vTableNum+" ");
-        mIdentifier = (MIdentifier)n.f0.accept(this, argu); //这里传下去是identifier，如果是b = new A() b.a()的话，会将
-                                                            // b的TEMP *输出
+        mIdentifier = (MIdentifier)n.f0.accept(this, argu); //如果是b = new A() b.a()的话
+                                                            // 这里传下去的是b，如果是new A().a的话，是new A()
         PigletPrint.println("");
 
-        thisMethod = (MMethod)argu;
-        thisClass = mClassList.getClass(thisMethod.getVarType(mIdentifier.getName()).getType());
+        if (mIdentifier.getLine() == -2 && mIdentifier.getColumn() == -2)   // new A().a()
+        {
+            thisClass = mClassList.getClass(mIdentifier.getType());
+        }
+        else if (mIdentifier.getLine() == -1 && mIdentifier.getColumn() == -1)
+        {
+            // this.xxx
+            thisClass = mClassList.getClass(mIdentifier.getName());
+        }
+        else
+        {
+            thisMethod = (MMethod) argu;
+            thisClass = mClassList.getClass(thisMethod.getVarType(mIdentifier.getName()).getType());
+        }
 
         mIdentifier = (MIdentifier)n.f2.accept(this, argu);
 
         Vector<Object> tmpV = thisClass.getMethodClassPos(mIdentifier.getName());
         whichClass = (MClass)tmpV.get(1);
+        callingMethod = whichClass.getMethod(mIdentifier.getName());
+        para = callingMethod.getParaNum();
 
         PigletPrint.println("HLOAD TEMP "+tNum+" TEMP "+vTableNum+" "+tmpV.get(0).toString());     //抽出对应的DTable
         PigletPrint.println("HLOAD TEMP "+dTableNum+" TEMP "+tNum+" "+whichClass.getMethodPos(mIdentifier.getName()));
@@ -635,7 +675,6 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         PigletPrint.print("(TEMP "+vTableNum+" ");
         n.f4.accept(this, argu);
         PigletPrint.println(")");
-        n.f5.accept(this, argu);
         return _ret;
     }
 
@@ -645,7 +684,15 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
      */
     public MType visit(ExpressionList n, MType argu) {
         MType _ret=null;
+        int tNum = tmpNumber++;
+        PigletPrint.printBegin();
+        PigletPrint.print("MOVE TEMP "+tNum+" ");
         n.f0.accept(this, argu);
+        PigletPrint.println("");
+        PigletPrint.printReturn();
+        PigletPrint.println("TEMP "+tNum);
+        PigletPrint.printEnd();
+        paraNum = 1;    //在这里重置paraNum
         n.f1.accept(this, argu);
         return _ret;
     }
@@ -654,10 +701,42 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
      * f0 -> ","
      * f1 -> Expression()
      */
+    // 新增一个变量计算个数
     public MType visit(ExpressionRest n, MType argu) {
         MType _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        paraNum++;  //当前是的paraNum个参数
+        if (paraNum >= 19)
+        {
+            if (paraNum == 19)
+            {
+                int tNum = tmpNumber++;
+                PigletPrint.printBegin();
+                // 第一次到19的时候，设置参数额外地址给TMEP 19
+                PigletPrint.println("MOVE TEMP "+tNum+" HALLOCATE "+(4*(para-18)));
+                paraAddr = tNum;
+            }
+            int exceedNum = paraNum-19;
+            PigletPrint.print("HSTORE TEMP "+paraAddr+" "+exceedNum+" ");
+            n.f1.accept(this, argu);
+            PigletPrint.println("");
+            if (paraNum == para)
+            {
+                PigletPrint.printReturn();
+                PigletPrint.println("TEMP "+paraAddr);
+                PigletPrint.printEnd();
+            }
+        }
+        else
+        {
+            int tNum = tmpNumber++;
+            PigletPrint.printBegin();
+            PigletPrint.print("MOVE TEMP "+tNum+" ");
+            n.f1.accept(this, argu);
+            PigletPrint.println("");
+            PigletPrint.printReturn();
+            PigletPrint.println("TEMP "+tNum);
+            PigletPrint.printEnd();
+        }
         return _ret;
     }
 
@@ -672,7 +751,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
      *       | NotExpression()
      *       | BracketExpression()
      */
-    // 若f0是int true false NotExp，均会在更底层输出
+    // 若f0是int true false NotExp，Allocation,ArrAllocation均会在更底层输出
     // 若是identifier，考虑到变量定义的时候不应该输出，则不会输出，会返回一个MIdentifier，在这一层输出
     // 其他的应该也不会返回吧...
     public MType visit(PrimaryExpression n, MType argu) {
@@ -680,6 +759,16 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         MType f0 = n.f0.accept(this, argu);
         if (f0 instanceof MIdentifier) // 是identifier的情况
         {
+            if (((MIdentifier)f0).getLine() == -2 && ((MIdentifier)f0).getColumn() == -2)
+            {
+                // 是allocationExpression
+                return f0;
+            }
+            if (((MIdentifier)f0).getLine() == -1 && ((MIdentifier)f0).getColumn() == -1)
+            {
+                // 是thisExpression
+                return f0;
+            }
             MIdentifier identifier = (MIdentifier)f0;
             String name = identifier.getName();
             MMethod thisMethod = (MMethod)argu;
@@ -688,6 +777,25 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
             {
                 String num = getNumber(thisMethod, name);
                 PigletPrint.print("TEMP "+num);
+            }
+            else if (thisMethod.hasPara(name))
+            {
+                // 是参数，注意当前20个参数的分布：TEMP 0是VTable，TEMP 1-18是参数，TEMP 19是超出的地址
+                int num = thisMethod.getParaIdx(name);
+                if (num < 18)
+                {
+                    PigletPrint.print("TEMP "+(num+1)+" ");
+                }
+                else
+                {
+                    num -= 18;
+                    int tNum = tmpNumber++;
+                    PigletPrint.printBegin();
+                    PigletPrint.println("HLOAD TEMP "+tNum+" TEMP 19 "+num);
+                    PigletPrint.printReturn();
+                    PigletPrint.println("TEMP "+tNum);
+                    PigletPrint.printEnd();
+                }
             }
             else    //是类变量，则从传进来的类实例表(TEMP 0)里获取相应的位置，默认int，boolean，array都是4个字节
             {
@@ -739,7 +847,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
     public MType visit(Identifier n, MType argu) {
         MType _ret=null;
         String name = n.f0.toString();
-        _ret = new MIdentifier(-1, -1, name, name);
+        _ret = new MIdentifier(0, 0, name, name);
         return _ret;
     }
 
@@ -748,7 +856,8 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
      */
     public MType visit(ThisExpression n, MType argu) {
         MType _ret=null;
-        n.f0.accept(this, argu);
+        PigletPrint.print("TEMP 0");
+        _ret = new MIdentifier(-1, -1, ((MMethod)argu).owner.getType(), ((MMethod)argu).owner.getName());
         return _ret;
     }
 
@@ -814,6 +923,8 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         PigletPrint.printReturn();
         PigletPrint.println("TEMP "+vTableNum);
         PigletPrint.printEnd();
+        _ret = new MIdentifier(-2, -2, mIdentifier.getName(), mIdentifier.getName());   // -2 -2 代表返回的是
+        // allocation Expression
         return _ret;
     }
 
