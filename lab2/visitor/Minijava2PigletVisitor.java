@@ -351,16 +351,37 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         MIdentifier expIdentifier = (MIdentifier)n.f2.accept(this, argu);
         if (expIdentifier != null)
         {
-            // expression只有三种返回值 null，class，identifier。其中，只有c = b 这种两边都是变量的，才不能直接用
-            // getType()，因为返回来的b本身只是个identifier
-            MVar tVar = (MVar)((MMethod)argu).getVarType(expIdentifier.getType());
-            if (tVar == null)   // 是c = new A()这种
+            // expression只有三种返回值 null，class，identifier。
+            // 当expression -> primaryExpression -> thisExpression
+            // 或者 expression -> messageSend 的时候是返回class（messageSend只是可能返回class，也可能返回空）
+            // 返回的两种identifier，一种是allocation的MIdentifier(new xxx)，一种是变量的MIdentifier (c=b)
+            // 在自己定义的时候，前者的line和column都是-2，后者的都是0
+            // 前者本身的type就是运行时类型，后者需要在MMethod中寻找MVar以找到它的运行时类型
+            if (expIdentifier instanceof MClass)
             {
                 thisVar.rType = expIdentifier.getType();
             }
-            else                // 是c = b这种格式
+            else
             {
-                thisVar.rType = tVar.rType;
+                if (expIdentifier.getLine() == 0 && expIdentifier.getColumn() == 0)
+                {
+                    MVar tVar = (MVar) ((MMethod) argu).getVarType(expIdentifier.getType());
+                    thisVar.rType = tVar.rType;
+                }
+                else
+                {
+                    thisVar.rType = expIdentifier.getType();
+                }
+                /*
+                MVar tVar = (MVar) ((MMethod) argu).getVarType(expIdentifier.getType());
+                if (tVar == null)   // 是c = new A()这种
+                {
+                    thisVar.rType = expIdentifier.getType();
+                }
+                else                // 是c = b这种格式
+                {
+                    thisVar.rType = tVar.rType;
+                }*/
             }
             //修改运行时类型
         }
@@ -691,7 +712,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         PigletPrint.print("(TEMP "+vTableNum+" ");
         n.f4.accept(this, argu);
         PigletPrint.println(")");
-        return mClassList.getClass(callingMethod.getType());
+        return mClassList.getClass(callingMethod.getType());    // return a class or null
     }
 
     /**
@@ -760,10 +781,10 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
      * f0 -> IntegerLiteral()
      *       | TrueLiteral()
      *       | FalseLiteral()
-     *       | Identifier()
+     *       | Identifier()     return Identifier with line = column = 0
      *       | ThisExpression()
      *       | ArrayAllocationExpression()
-     *       | AllocationExpression()
+     *       | AllocationExpression()   return identifier with line = column = -2
      *       | NotExpression()
      *       | BracketExpression()
      */
