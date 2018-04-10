@@ -406,6 +406,10 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         MType _ret=null;
         int arrNum = tmpNumber++;
         int exp1 = tmpNumber++;
+        int lenNum = tmpNumber++;
+        int labelTrue = labelNumber++;
+        int labelFalse = labelNumber++;
+        int labelInit = labelNumber++;
         MIdentifier identifier = (MIdentifier)n.f0.accept(this, argu);
         String name = identifier.getName();
         MMethod thisMethod = (MMethod)argu;
@@ -418,14 +422,22 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         {
             PigletPrint.println("HLOAD TEMP "+arrNum+" TEMP 0 "+thisClass.getVarPos(name)+" ");
         }
-        PigletPrint.print("MOVE TEMP "+exp1+" ");
+        PigletPrint.println("CJUMP LT TEMP "+arrNum+" 1 L"+labelInit);
+        PigletPrint.println("ERROR");
+        PigletPrint.print("L"+labelInit+" MOVE TEMP "+exp1+" ");
         n.f2.accept(this, argu);
         PigletPrint.println("");
+        // 检查越界
+        PigletPrint.println("HLOAD TEMP "+lenNum+" TEMP "+arrNum+" 0");
+        PigletPrint.println("CJUMP LT TEMP "+exp1+" TEMP "+lenNum+" L"+labelFalse);
         PigletPrint.println("MOVE TEMP "+arrNum+" PLUS TEMP "+arrNum+" TIMES 4 PLUS 1 TEMP "+exp1);
-        // arrNum = arrNum + 4*(1+exp1) 多出来的1是数组长度
         PigletPrint.print("HSTORE TEMP "+arrNum+" 0 ");
+        // arrNum = arrNum + 4*(1+exp1) 多出来的1是数组长度
         n.f5.accept(this, argu);
         PigletPrint.println("");
+        PigletPrint.println("JUMP L"+labelTrue);
+        PigletPrint.println("L"+labelFalse+" ERROR");
+        PigletPrint.println("L"+labelTrue+" NOOP");
         return _ret;
     }
 
@@ -618,15 +630,28 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         int arrayNum = tmpNumber++;
         int exp1 = tmpNumber++;
         int retNum = tmpNumber++;
+        int lenNum = tmpNumber++;
+        int labelTrue = labelNumber++;
+        int labelFalse = labelNumber++;
+        int labelInit = labelNumber++;
         PigletPrint.printBegin();
         PigletPrint.print("MOVE TEMP "+arrayNum+" ");
         n.f0.accept(this, argu);
         PigletPrint.println("");
-        PigletPrint.print("MOVE TEMP "+exp1+" ");
+        // 检查是否是一个有效的array地址
+        PigletPrint.println("CJUMP LT TEMP "+arrayNum+" 1 L"+labelInit);
+        PigletPrint.println("ERROR");
+        PigletPrint.print("L"+labelInit+" MOVE TEMP "+exp1+" ");
         n.f2.accept(this, argu);
         PigletPrint.println("");
-        PigletPrint.print("HLOAD TEMP "+retNum+" PLUS TEMP "+arrayNum+" TIMES 4 PLUS 1 TEMP "+exp1+" 0");
+        // 检查越界
+        PigletPrint.println("HLOAD TEMP "+lenNum+" TEMP "+arrayNum+" 0");
+        PigletPrint.println("CJUMP LT TEMP "+exp1+" TEMP "+lenNum+" L"+labelFalse);
+        PigletPrint.println("HLOAD TEMP "+retNum+" PLUS TEMP "+arrayNum+" TIMES 4 PLUS 1 TEMP "+exp1+" 0");
         // retNum = *arrayNum+4*(1+exp1) 因为HLOAD规定最后一个只能是integer_literal
+        PigletPrint.println("JUMP L"+labelTrue);
+        PigletPrint.println("L"+labelFalse+" ERROR");
+        PigletPrint.println("L"+labelTrue+" NOOP");
         PigletPrint.printReturn();
         PigletPrint.println("TEMP "+retNum);
         PigletPrint.printEnd();
@@ -640,14 +665,17 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
      */
     public MType visit(ArrayLength n, MType argu) {
         MType _ret=null;
-        int tNum = tmpNumber++;
+        int arrayNum = tmpNumber++;
         int retNum = tmpNumber++;
+        int labelInit = labelNumber++;
         MIdentifier mIdentifier;
         PigletPrint.printBegin();
-        PigletPrint.print("MOVE TEMP "+tNum+" ");
+        PigletPrint.print("MOVE TEMP "+arrayNum+" ");
         n.f0.accept(this, argu);
         PigletPrint.println("");
-        PigletPrint.println("HLOAD TEMP "+retNum+" TEMP "+tNum+" 0");
+        PigletPrint.println("CJUMP LT TEMP "+arrayNum+" 1 L"+labelInit);
+        PigletPrint.println("ERROR");
+        PigletPrint.println("L"+labelInit+" HLOAD TEMP "+retNum+" TEMP "+arrayNum+" 0");
         PigletPrint.printReturn();
         PigletPrint.println("TEMP "+retNum);
         PigletPrint.printEnd();
@@ -672,6 +700,7 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         int vTableNum = tmpNumber++;
         int dTableNum = tmpNumber++;
         int tNum = tmpNumber++;
+        int labelInit = labelNumber++;
         PigletPrint.println("CALL");
         PigletPrint.printBegin();
         PigletPrint.print("MOVE TEMP "+vTableNum+" ");
@@ -702,7 +731,11 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         callingMethod = whichClass.getMethod(mIdentifier.getName());
         para = callingMethod.getParaNum();
 
-        PigletPrint.println("MOVE TEMP "+vTableNum+" PLUS "+tmpV.get(0).toString()+" TEMP "+vTableNum);
+        //检查初始化
+        PigletPrint.println("CJUMP LT TEMP "+vTableNum+" 1 L"+labelInit);
+        PigletPrint.println("ERROR");
+
+        PigletPrint.println("L"+labelInit+" MOVE TEMP "+vTableNum+" PLUS "+tmpV.get(0).toString()+" TEMP "+vTableNum);
 
         PigletPrint.println("HLOAD TEMP "+tNum+" TEMP "+vTableNum+" 0");     //抽出对应的DTable
         PigletPrint.println("HLOAD TEMP "+dTableNum+" TEMP "+tNum+" "+whichClass.getMethodPos(mIdentifier.getName()));
@@ -910,12 +943,23 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
         MType _ret=null;
         int exp = tmpNumber++;
         int arrNum = tmpNumber++;
+        int tmpNum = tmpNumber++;
+        int labelStart = labelNumber++;
+        int labelNext= labelNumber++;
         PigletPrint.printBegin();
         PigletPrint.print("MOVE TEMP "+exp+" ");
         n.f3.accept(this, argu);
         PigletPrint.println("");
         PigletPrint.println("MOVE TEMP "+arrNum+" HALLOCATE TIMES 4 PLUS 1 TEMP "+exp);
         PigletPrint.println("HSTORE TEMP "+arrNum+" 0 TEMP "+exp);  //维护数组长度，所以上面也还要PLUS 1
+        // 手写一个循环置0
+        PigletPrint.println("MOVE TEMP "+tmpNum+" 0");  // i = 1
+        PigletPrint.println("L"+labelStart+"  CJUMP LT TEMP "+tmpNum+" TEMP "+exp+" L"+labelNext);  //
+        PigletPrint.println("HSTORE PLUS TEMP "+arrNum+" TIMES 4 PLUS 1 TEMP "+tmpNum+" 0 0");
+        PigletPrint.println("MOVE TEMP "+tmpNum+" PLUS 1 TEMP "+tmpNum);
+        PigletPrint.println("JUMP L"+labelStart);
+        PigletPrint.println("L"+labelNext+" NOOP");
+        // 循环结束
         PigletPrint.printReturn();
         PigletPrint.println("TEMP "+arrNum);
         PigletPrint.printEnd();
