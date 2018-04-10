@@ -109,6 +109,10 @@ public class MMethod extends MIdentifier
     {
         return orderPara;
     }
+    public Vector<MVar> getOrderVar()
+    {
+        return orderVar;
+    }
     public MClass getOwner() {
         return owner;
     }
