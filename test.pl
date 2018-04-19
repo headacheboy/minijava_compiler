@@ -8,6 +8,6 @@ for my $i (@files) {
     my $out = `java -jar ../run/pgi.jar < ../run/tmp.pg`;
     my $ans = `java -jar ../run/pgi.jar < ../run/$i.pg`;
     if ($out ne $ans) {
-        print "********** error\n";
+        exit(10086);
     }
 }
