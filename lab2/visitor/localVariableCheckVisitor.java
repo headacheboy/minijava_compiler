@@ -125,7 +125,7 @@ public class localVariableCheckVisitor extends GJDepthFirst<MType, MType>
         n.f3.accept(this, argu);
         n.f4.accept(this, thisClass);
         n.f5.accept(this, argu);
-        n.f6.accept(this, argu);
+        n.f6.accept(this, thisClass);
         n.f7.accept(this, argu);
         return _ret;
     }

@@ -1042,6 +1042,11 @@ public class Minijava2PigletVisitor extends GJDepthFirst<MType, MType>
     public MType visit(BracketExpression n, MType argu) {
         MType _ret;
         _ret = n.f1.accept(this, argu);
+        if (_ret instanceof MIdentifier)
+        {
+            ((MIdentifier)_ret).setLine(-2);
+            ((MIdentifier)_ret).setColumn(-2);
+        }
         return _ret;
     }
 }
