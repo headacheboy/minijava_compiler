@@ -1,0 +1,12 @@
+os: Visual Studio 2015
+
+platform: x64
+
+# environment:
+
+build: off
+
+shallow_clone: true
+
+test_script:
+    - perl test.pl
