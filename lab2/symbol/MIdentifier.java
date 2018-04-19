@@ -25,6 +25,15 @@ public class MIdentifier extends MType
         return name;
     }
     
+    public void setLine(int a)
+    {
+        line = a;
+    }
+    public void setColumn(int a)
+    {
+        column = a;
+    }
+    
     public boolean insertVar(MVar mVar)
     {
         System.out.println("this should not appear!");
