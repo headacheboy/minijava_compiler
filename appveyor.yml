@@ -5,6 +5,7 @@ platform: x64
 environment:
     matrix:
     - test_project: ''
+    - test_project2: 2
 
 build: off
 
