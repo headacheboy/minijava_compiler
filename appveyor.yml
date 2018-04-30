@@ -3,13 +3,12 @@ os: Visual Studio 2015
 platform: x64
 
 environment:
-    my_test: master
+    matrix:
+    - project: master
 
 build: off
 
 shallow_clone: true
-
-install:
 
 test_script:
     - perl test.pl
