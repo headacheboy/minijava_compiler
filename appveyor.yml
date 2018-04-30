@@ -8,5 +8,7 @@ build: off
 
 shallow_clone: true
 
+install:
+
 test_script:
     - perl test.pl
