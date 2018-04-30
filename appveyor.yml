@@ -4,7 +4,7 @@ platform: x64
 
 environment:
     matrix:
-    - project: master
+    - test_project: ''
 
 build: off
 
