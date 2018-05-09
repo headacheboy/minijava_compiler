@@ -4,8 +4,10 @@ import syntaxtree.*;
 import java.util.*;
 
 public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
+    int tmpNum = 1000;
     int getTmpNum() {
-        return 100;
+        tmpNum = tmpNum + 1;
+        return tmpNum;
     }
 
     public Allsp visit(NodeList n, Allsp argu) {
@@ -22,7 +24,7 @@ public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
         SpigletResultList _ret = new SpigletResultList();
         if ( n.present() ) {
             for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
-                SpigletResult res = (SpigletResult)e.nextElement().accept(this,argu);
+                SpigletResult res = (SpigletResult)e.nextElement().accept(this, new Place("notCALL", true));
                 if (((Place)argu).stmt.equals("CALL")) {
                     if (!res.isTemp()) {
                         int newTemp = getTmpNum();
@@ -71,6 +73,8 @@ public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
      */
     public Allsp visit(Goal n, Allsp argu) {
         Allsp _ret=null;
+        SpigletResult maxNumStr = (SpigletResult)n.accept(new GetMaxTmp(), null);
+        tmpNum = Integer.parseInt(maxNumStr.toString()) + 1;
         n.f0.accept(this, argu);
         System.out.println("MAIN");
         n.f1.accept(this, argu);
