@@ -4,7 +4,7 @@ my @files = ("BinaryTree", "BubbleSort", "Factorial", "LinearSearch", "LinkedLis
 my $exit_code = 0;
 for my $i (@files) {
     print "$i\n";
-    my $out_pg = `java Main ../ztest/$i.java > ../run/tmp.pg`;
+    my $out_pg = `java Main ../run/$i.java > ../run/tmp.pg`;
     my $out = `java -jar ../run/pgi.jar < ../run/tmp.pg`;
     my $ans = `java -jar ../run/pgi.jar < ../run/$i.pg`;
     if ($out ne $ans) {
@@ -19,7 +19,7 @@ for my $i (@files) {
 my @extra_tests = ("my-override");
 for my $i (@extra_tests) {
     print "$i\n";
-    my $out_pg = `java Main ../ztest/$i.java > ../run/tmp.pg`;
+    my $out_pg = `java Main ../run/$i.java > ../run/tmp.pg`;
     my $out = `java -jar ../run/pgi.jar < ../run/tmp.pg`;
     my $ans = "1\n1\n2\n2\n1\n0\n0\n";
     if ($out ne $ans) {
