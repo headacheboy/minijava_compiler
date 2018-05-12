@@ -1,6 +1,8 @@
 package symbol;
 
 public class Place extends Allsp {
+    // to show the exp in which stmt
+    // or whether the exp in another exp
     public String stmt;
     public boolean exp;
 

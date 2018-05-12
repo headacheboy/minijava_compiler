@@ -2,6 +2,7 @@ package symbol;
 import java.util.*;
 
 public class SpigletResultList extends Allsp {
+    // store result for CALL parameters
     public Vector<SpigletResult> nodes;
     public SpigletResultList() {
         nodes = new Vector<SpigletResult>();

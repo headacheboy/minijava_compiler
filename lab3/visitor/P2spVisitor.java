@@ -6,6 +6,7 @@ import java.util.*;
 public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
     int tmpNum = 1000;
     int getTmpNum() {
+        // return tmp tmpNum unused
         tmpNum = tmpNum + 1;
         return tmpNum;
     }
@@ -26,6 +27,7 @@ public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
             for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
                 SpigletResult res = (SpigletResult)e.nextElement().accept(this, new Place("notCALL", true));
                 if (((Place)argu).stmt.equals("CALL")) {
+                    // store result only in CALL to return parameters
                     if (!res.isTemp()) {
                         int newTemp = getTmpNum();
                         System.out.println("MOVE TEMP " + newTemp + " " + res);
@@ -73,6 +75,7 @@ public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
      */
     public Allsp visit(Goal n, Allsp argu) {
         Allsp _ret=null;
+        // get the max tmp number in pg file
         SpigletResult maxNumStr = (SpigletResult)n.accept(new GetMaxTmp(), null);
         tmpNum = Integer.parseInt(maxNumStr.toString()) + 1;
         n.f0.accept(this, argu);
@@ -108,6 +111,7 @@ public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
         SpigletResult paras = (SpigletResult)n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         System.out.println(name + " [ " + paras + " ]");
+        // StmtExp only appears in Procedure, so print BEGIN ... END here
         System.out.println("BEGIN");
         SpigletResult res = (SpigletResult)n.f4.accept(this, argu);
         System.out.println("RETURN " + res);
@@ -161,6 +165,7 @@ public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
         n.f0.accept(this, argu);
         SpigletResult exp = (SpigletResult)n.f1.accept(this, argu);
         if (!exp.isTemp()) {
+            // needs temp number
             int newTemp = getTmpNum();
             System.out.println("MOVE TEMP " + newTemp + " " + exp);
             exp = new SpigletResult("TEMP " + newTemp, true);
@@ -252,6 +257,8 @@ public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
         n.f0.accept(this, argu);
         SpigletResult exp = (SpigletResult)n.f1.accept(this, argu);
         if (!exp.isSimple()) {
+            // needs simple exp
+            // TEMP number is OK
             int newTemp = getTmpNum();
             System.out.println("MOVE TEMP " + newTemp + " " + exp);
             exp = new SpigletResult("TEMP " + newTemp, true);
@@ -271,6 +278,7 @@ public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
      */
     public Allsp visit(Exp n, Allsp argu) {
         Allsp _ret=null;
+        // return to UPPER to see whether it is simple or tmp
         _ret = n.f0.accept(this, argu);
         return _ret;
     }
@@ -283,6 +291,7 @@ public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
      * f4 -> "END"
      */
     public Allsp visit(StmtExp n, Allsp argu) {
+        // BEGIN RETURN and END are printed in Procedure
         Allsp _ret=null;
         n.f0.accept(this, argu);
         SpigletResult stmtlist = (SpigletResult)n.f1.accept(this, argu);
@@ -315,6 +324,7 @@ public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
             exp1 = new SpigletResult("TEMP " + newTemp, true);
         }
         n.f2.accept(this, argu);
+        // get TEMP list
         SpigletResultList exp2LO = (SpigletResultList)n.f3.accept(this, new Place("CALL", true));
         n.f4.accept(this, argu);
         _ret = new SpigletResult("CALL " + exp1 + " ( " + exp2LO + ")", false);
@@ -369,6 +379,7 @@ public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
      *       | "TIMES"
      */
     public Allsp visit(Operator n, Allsp argu) {
+        // return Operator
         Allsp _ret=null;
         int which = n.f0.which;
         String op;
@@ -390,6 +401,7 @@ public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
      * f1 -> IntegerLiteral()
      */
     public Allsp visit(Temp n, Allsp argu) {
+        // return TEMP number as it is
         Allsp _ret=null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
@@ -401,6 +413,7 @@ public class P2spVisitor extends GJDepthFirst<Allsp, Allsp> {
      * f0 -> <INTEGER_LITERAL>
      */
     public Allsp visit(IntegerLiteral n, Allsp argu) {
+        // return int
         Allsp _ret=null;
         n.f0.accept(this, argu);
         _ret = new SpigletResult(n.f0.toString(), true);
