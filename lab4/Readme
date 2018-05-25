@@ -1,0 +1,10 @@
+symbol里三个文件，FlowBlock表示语句。每个FlowBlock里有集合pre, next, left, right, In, Out，No
+分别表示指向这条语句的语句集合；这条语句指向的语句集合。这条语句的左值；这条语句的右值（左值即def，右值即use）；这条语句的In集合和Out集合
+No表示这条语句在一个函数中的编号。
+在经过liveness analysis之后的每个FlowBlock的In集合即这条语句对应的活跃变量。
+
+FlowGraph表示流图。一个函数一个流图。有map mBlock, mLabel, name, No
+mBlock: <Integer, FlowBlock>，即序号对应的语句。
+mLabel：<String, Integer>，即函数里的标签（如L2）对应的语句
+name：函数名
+No：mBlock里最后一个语句的序号。（注意不是长度是长度-1）
