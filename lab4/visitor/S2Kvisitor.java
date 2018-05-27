@@ -2,9 +2,10 @@ package visitor;
 import syntaxtree.*;
 import symbol.*;
 import java.util.*;
-import java.util.Vector;
 
 public class S2Kvisitor extends GJDepthFirst<Object, Object> {
+    HashMap<String, FlowGraph> flowGraphHashMap = new HashMap<String, FlowGraph>();
+    FlowGraph curFlowGraph; // this stores the current procedure
     public void println(String str) {
         System.out.println(str);
     }
@@ -28,6 +29,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         }
         return stackpos;
     }
+
     public Object visit(NodeList n, Object argu) {
         Object _ret=null;
         int _count=0;
@@ -39,18 +41,17 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     }
 
     public Object visit(NodeListOptional n, Object argu) {
+        // use the _ret only in Call stmt
+        Vector<String> _ret= new Vector<String>();
         if ( n.present() ) {
-            Vector<String> _ret= new Vector<String>();
             int _count=0;
             for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
                 String reg = (String)e.nextElement().accept(this,argu);
                 _ret.add(reg);
                 _count++;
             }
-            return _ret;
         }
-        else
-            return null;
+        return _ret;
     }
 
     public Object visit(NodeOptional n, Object argu) {
@@ -88,8 +89,10 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(Goal n, Object argu) {
         Object _ret=null;
+        flowGraphHashMap = (HashMap<String, FlowGraph>)argu;
         //n.f0.accept(this, argu);
-        println("MAIN [][][]");
+        curFlowGraph = flowGraphHashMap.get("MAIN"); 
+        println("MAIN [0][" + curFlowGraph.pBlock.useStack + "][" + curFlowGraph.pBlock.inCall + "]");
         n.f1.accept(this, argu);
         //n.f2.accept(this, argu);
         println("END");
@@ -119,13 +122,14 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         String pname = (String)n.f0.accept(this, argu);
         //n.f1.accept(this, argu);
         int paranum = Integer.parseInt((String)n.f2.accept(this, argu));
-        println(pname + " [" + paranum + "][" + "][" + "]");
-        for (int i=0; i<=3 && i < paranum; ++i) {
-            println("MOVE s" + i + " a" + i);
-        }
-        if (paranum > 4) {
-            // TODO
-        }
+        curFlowGraph = flowGraphHashMap.get(pname); 
+        println(pname + " [" + paranum + "][" + curFlowGraph.pBlock.useStack + "][" + curFlowGraph.pBlock.inCall +  "]");
+        //for (int i=0; i<=3 && i < paranum; ++i) {
+        //    println("MOVE s" + i + " a" + i);
+        //}
+        //if (paranum > 4) {
+        //    // TODO
+        //}
         //n.f3.accept(this, argu);
         String reg = (String)n.f4.accept(this, argu);
         println("MOVE v0 " + reg);

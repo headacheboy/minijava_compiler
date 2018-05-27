@@ -7,6 +7,7 @@ public class FlowGraph
     public HashMap<Integer, FlowBlock> mBlock = new HashMap<Integer, FlowBlock>();
     public HashMap<String, Integer> mLabel = new HashMap<String, Integer>();
     public String name;
+    public ProcedureBlock pBlock = new ProcedureBlock();
     public int No;
 
     public FlowGraph(String n){

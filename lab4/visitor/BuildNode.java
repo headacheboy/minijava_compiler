@@ -19,6 +19,7 @@ public class BuildNode implements GJNoArguVisitor<String> {
     private int currentNo;
     private HashMap<String, Integer> currentLabelMap;
     private FlowGraph currentFlowGraph;
+    int curLineNum = 1; // record the line in a procedure; 0:entry
 
     public BuildNode(HashMap<String, FlowGraph> fg)
     {
@@ -85,6 +86,7 @@ public class BuildNode implements GJNoArguVisitor<String> {
      * f4 -> <EOF>
      */
     public String visit(Goal n) {
+        curLineNum = 1;
         FlowGraph flowGraph = new FlowGraph("MAIN");
         currentFlowGraph = flowGraph;
         String _ret=null;
@@ -95,6 +97,7 @@ public class BuildNode implements GJNoArguVisitor<String> {
         n.f1.accept(this);
         flowGraph.addBlock(currentNo);
         flowGraph.No = currentNo;
+        flowGraph.pBlock.lazyInit("MAIN", 0);
         n.f3.accept(this);
         return _ret;
     }
@@ -116,13 +119,17 @@ public class BuildNode implements GJNoArguVisitor<String> {
      * f4 -> StmtExp()
      */
     public String visit(Procedure n) {
+        // new Procedure, set curLineNum 1
+        curLineNum = 1;
         String _ret = null;
-        FlowGraph flowGraph = new FlowGraph(n.f0.accept(this));
+        String pname = n.f0.accept(this);
+        int pnum = Integer.parseInt(n.f2.accept(this));
+        FlowGraph flowGraph = new FlowGraph(pname);
+        flowGraph.pBlock.lazyInit(pname, pnum);
         currentFlowGraph = flowGraph;
         flowGraphMap.put(flowGraph.name, flowGraph);
         currentLabelMap = flowGraph.mLabel;
         currentNo = 0;
-        n.f2.accept(this);
         n.f4.accept(this);
         return _ret;
     }
@@ -141,6 +148,7 @@ public class BuildNode implements GJNoArguVisitor<String> {
         String _ret=null;
         currentFlowGraph.addBlock(currentNo);
         n.f0.accept(this);
+        curLineNum ++;
         currentNo++;
         return _ret;
     }
@@ -286,6 +294,9 @@ public class BuildNode implements GJNoArguVisitor<String> {
         n.f1.accept(this);
         n.f2.accept(this);
         n.f3.accept(this);
+        if (currentFlowGraph.pBlock.inCall < n.f3.size()) {
+            currentFlowGraph.pBlock.inCall = n.f3.size();
+        }
         n.f4.accept(this);
         return _ret;
     }
@@ -344,7 +355,18 @@ public class BuildNode implements GJNoArguVisitor<String> {
     public String visit(Temp n) {
         String _ret=null;
         n.f0.accept(this);
-        n.f1.accept(this);
+        int tmpnum = Integer.parseInt(n.f1.accept(this));
+        ProcedureBlock curPB = currentFlowGraph.pBlock;
+        if (!curPB.tmpMap.containsKey(tmpnum)) {
+            if (tmpnum < curPB.paranum) {
+                // this TEMP is used as a parameter
+                // so living from 0 to here (maybe)
+                curPB.tmpMap.put(tmpnum, new Liveinterval(tmpnum, 1, curLineNum));
+            } else {
+                // think this TEMP is living at this line
+                curPB.tmpMap.put(tmpnum, new Liveinterval(tmpnum, curLineNum, curLineNum));
+            }
+        }
         return _ret;
     }
 
