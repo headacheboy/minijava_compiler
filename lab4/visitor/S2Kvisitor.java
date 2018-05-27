@@ -5,6 +5,7 @@ import java.util.*;
 
 public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     HashMap<String, FlowGraph> flowGraphHashMap = new HashMap<String, FlowGraph>();
+    ProcedureBlock curpBlock; // this stores the current procedure
     FlowGraph curFlowGraph; // this stores the current procedure
     public void println(String str) {
         System.out.println(str);
@@ -12,8 +13,24 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     public void print(String str) {
         System.out.print(str);
     }
-    public String getReg(int tmpNum) {
-        return "t0";
+    public String getReg(String tmpNumStr, String defaultReg) {
+        int tmpNum = Integer.parseInt(tmpNumStr);
+        if (curpBlock.regStack.containsKey(tmpNum)) {
+            println("ALOAD " + defaultReg + " " + curpBlock.regStack.get(tmpNum));
+            return defaultReg;
+        } else {
+            return curpBlock.regCandi.get(tmpNum);
+        }
+    }
+    public void moveReg(String tmpNumStr, String exp) {
+        int tmpNum = Integer.parseInt(tmpNumStr);
+        if (curpBlock.regStack.containsKey(tmpNum)) {
+            println("MOVE v0 " + exp);
+            println("ASTORE " + curpBlock.regStack.get(tmpNum) + "v0");
+        } else {
+            String reg = getReg(tmpNumStr, "");
+            println("MOVE " + reg + " " + exp);
+        }
     }
     public int storeS07(int stackpos) {
         for (int i=0; i<=7; ++i) {
@@ -92,7 +109,8 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         flowGraphHashMap = (HashMap<String, FlowGraph>)argu;
         //n.f0.accept(this, argu);
         curFlowGraph = flowGraphHashMap.get("MAIN"); 
-        println("MAIN [0][" + curFlowGraph.pBlock.useStack + "][" + curFlowGraph.pBlock.inCall + "]");
+        curpBlock = curFlowGraph.pBlock;
+        println("MAIN [0][" + curpBlock.useStack + "][" + curpBlock.inCall + "]");
         n.f1.accept(this, argu);
         //n.f2.accept(this, argu);
         println("END");
@@ -124,13 +142,6 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         int paranum = Integer.parseInt((String)n.f2.accept(this, argu));
         curFlowGraph = flowGraphHashMap.get(pname); 
         println(pname + " [" + paranum + "][" + curFlowGraph.pBlock.useStack + "][" + curFlowGraph.pBlock.inCall +  "]");
-        //for (int i=0; i<=3 && i < paranum; ++i) {
-        //    println("MOVE s" + i + " a" + i);
-        //}
-        //if (paranum > 4) {
-        //    // TODO
-        //}
-        //n.f3.accept(this, argu);
         String reg = (String)n.f4.accept(this, argu);
         println("MOVE v0 " + reg);
         println("END");
@@ -181,7 +192,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     public Object visit(CJumpStmt n, Object argu) {
         Object _ret=null;
         //n.f0.accept(this, argu);
-        String reg = (String)n.f1.accept(this, argu);
+        String reg = getReg((String)n.f1.accept(this, argu), "v0");
         String label = (String)n.f2.accept(this, argu);
         println("CJUMP " + reg + " " + label);
         return _ret;
@@ -208,9 +219,9 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     public Object visit(HStoreStmt n, Object argu) {
         Object _ret=null;
         //n.f0.accept(this, argu);
-        String reg1 = (String)n.f1.accept(this, argu);
+        String reg1 = getReg((String)n.f1.accept(this, argu), "v0");
         int bias = Integer.parseInt((String)n.f2.accept(this, argu));
-        String reg2 = (String)n.f3.accept(this, argu);
+        String reg2 = getReg((String)n.f3.accept(this, argu), "v1");
         println("HSTORE " + reg1 + " " + bias + " " + reg2);
         return _ret;
     }
@@ -224,8 +235,8 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     public Object visit(HLoadStmt n, Object argu) {
         Object _ret=null;
         //n.f0.accept(this, argu);
-        String reg1 = (String)n.f1.accept(this, argu);
-        String reg2 = (String)n.f2.accept(this, argu);
+        String reg1 = getReg((String)n.f1.accept(this, argu), "v0");
+        String reg2 = getReg((String)n.f2.accept(this, argu), "v1");
         int bias = Integer.parseInt((String)n.f3.accept(this, argu));
         println("HLOAD " + reg1 + " " + reg2 + " " + bias);
         return _ret;
@@ -240,8 +251,8 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         Object _ret=null;
         //n.f0.accept(this, argu);
         String reg1 = (String)n.f1.accept(this, argu);
-        String reg2 = (String)n.f2.accept(this, argu);
-        println("MOVE " + reg1 + " " + reg2);
+        String exp = (String)n.f2.accept(this, argu);
+        moveReg(reg1, exp);
         return _ret;
     }
 
@@ -337,7 +348,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     public Object visit(BinOp n, Object argu) {
         Object _ret=null;
         String op = (String)n.f0.accept(this, argu);
-        String reg = (String)n.f1.accept(this, argu);
+        String reg = getReg((String)n.f1.accept(this, argu), "v0");
         String sexp = (String)n.f2.accept(this, argu);
         _ret = op + " " + reg + " " + sexp;
         return _ret;
@@ -373,6 +384,9 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     public Object visit(SimpleExp n, Object argu) {
         Object _ret=null;
         _ret = n.f0.accept(this, argu);
+        if (n.f0.which == 0) {
+            _ret = getReg((String)_ret, "v0");
+        }
         return _ret;
     }
 
@@ -383,8 +397,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     public Object visit(Temp n, Object argu) {
         Object _ret=null;
         n.f0.accept(this, argu);
-        int tmpNum = Integer.parseInt((String)n.f1.accept(this, argu));
-        _ret = getReg(tmpNum);
+        _ret = (String)n.f1.accept(this, argu);
         return _ret;
     }
 

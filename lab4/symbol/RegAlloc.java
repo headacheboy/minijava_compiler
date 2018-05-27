@@ -60,11 +60,11 @@ public class RegAlloc {
         if (spill.end > curInterval.end) {
             curpBlock.regCandi.put(curInterval.tmpnum, curpBlock.regCandi.get(spill.tmpnum));
             curpBlock.regCandi.remove(spill.tmpnum);
-            curpBlock.regStack.put(spill.tmpnum, "(SPILLARG " + curspillIdx + ")");
+            curpBlock.regStack.put(spill.tmpnum, "SPILLARG " + curspillIdx);
             curactive.removeElement(spill_idx);
             curactive.add(intervalId);
         } else {
-            curpBlock.regStack.put(curInterval.tmpnum, "(SPILLARG " + curspillIdx + ")");
+            curpBlock.regStack.put(curInterval.tmpnum, "SPILLARG " + curspillIdx);
             curspillIdx ++;
         }
     }
