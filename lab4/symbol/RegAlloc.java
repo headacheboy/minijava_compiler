@@ -39,10 +39,15 @@ public class RegAlloc {
         int cursize = curactive.size();
         for (int j=0, realj=0; j<cursize; j++, realj++) {
             int curj = curactive.get(realj);
-            if (curlives.get(curj).end < curInterval.end) {
-                curactive.removeElement(realj);
+            if (curlives.get(curj).end < curInterval.start) {
+                curactive.remove(realj);
                 realj -= 1;
-                curusedR[curj] = false;
+                int curTmpNum = curlives.get(curj).tmpnum;
+                if (curpBlock.regCandi.containsKey(curTmpNum)) {
+                    int usedReg = Integer.parseInt(curpBlock.regCandi.get(curTmpNum));
+                    // System.out.println("remove " + curTmpNum + " " + usedReg);
+                    curusedR[usedReg] = false;
+                }
             }
         }
     }
@@ -78,6 +83,11 @@ public class RegAlloc {
                 curlives.add(liint);
             }
             Collections.sort(curlives);
+            // System.out.println(fg.name);
+            // for (Liveinterval liint : curlives) {
+            //     System.out.println(liint);
+            // }
+            // System.out.println("");
 
             Vector<Integer> active = new Vector<Integer>();
             curactive = active;
@@ -94,13 +104,14 @@ public class RegAlloc {
                     for (int r=0; r<R; ++r) {
                         if (!curusedR[r]) {
                             curusedR[r] = true;
-                            String regname;
-                            if (r <= 10) {
-                                regname = "t" + r;
-                            } else {
-                                regname = "s" + (r-10);
-                            }
-                            curpBlock.regCandi.put(liint.tmpnum, regname);
+                            // String regname;
+                            // if (r <= 10) {
+                            //     regname = "t" + r;
+                            // } else {
+                            //     regname = "s" + (r-10);
+                            // }
+                            curpBlock.regCandi.put(liint.tmpnum, ""+r);
+                            break;
                         }
                     }
                     curactive.add(curIntervalnum);
@@ -108,6 +119,19 @@ public class RegAlloc {
                 curIntervalnum++;
             }
             curpBlock.useStack = curspillIdx + curpBlock.regCandi.size();
+            // System.out.println(fg.name);
+            HashMap<Integer, String> regCandi = new HashMap<Integer, String>();
+            for (Entry<Integer, String> entry : fg.pBlock.regCandi.entrySet()) {
+                int r = Integer.parseInt(entry.getValue());
+                String regname;
+                if (r <= 10) {
+                    regname = "t" + r;
+                } else {
+                    regname = "s" + (r-10);
+                }
+                regCandi.put(entry.getKey(), regname);
+            }
+            curpBlock.regCandi = regCandi;
         }
     }
 }

@@ -141,6 +141,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         //n.f1.accept(this, argu);
         int paranum = Integer.parseInt((String)n.f2.accept(this, argu));
         curFlowGraph = flowGraphHashMap.get(pname); 
+        curpBlock = curFlowGraph.pBlock;
         println(pname + " [" + paranum + "][" + curFlowGraph.pBlock.useStack + "][" + curFlowGraph.pBlock.inCall +  "]");
         String reg = (String)n.f4.accept(this, argu);
         println("MOVE v0 " + reg);
@@ -220,7 +221,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         Object _ret=null;
         //n.f0.accept(this, argu);
         String reg1 = getReg((String)n.f1.accept(this, argu), "v0");
-        int bias = Integer.parseInt((String)n.f2.accept(this, argu));
+        String bias = (String)n.f2.accept(this, argu);
         String reg2 = getReg((String)n.f3.accept(this, argu), "v1");
         println("HSTORE " + reg1 + " " + bias + " " + reg2);
         return _ret;
@@ -235,10 +236,15 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     public Object visit(HLoadStmt n, Object argu) {
         Object _ret=null;
         //n.f0.accept(this, argu);
-        String reg1 = getReg((String)n.f1.accept(this, argu), "v0");
+        String tmp1 = (String)n.f1.accept(this, argu);
         String reg2 = getReg((String)n.f2.accept(this, argu), "v1");
         int bias = Integer.parseInt((String)n.f3.accept(this, argu));
-        println("HLOAD " + reg1 + " " + reg2 + " " + bias);
+        if (curpBlock.regStack.containsKey(tmp1)) {
+            println("HLOAD v1 " + reg2 + " " + bias);
+            moveReg(tmp1, "v1");
+        } else {
+            println("HLOAD " + getReg(tmp1, "v0") + " " + reg2 + " " + bias);
+        }
         return _ret;
     }
 
@@ -313,11 +319,11 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         Vector<String> paras = (Vector<String>)n.f3.accept(this, argu);
         int size = paras.size();
         for (int i=0; i<size && i<=3; ++i) {
-            println("MOVE a" + i + " " + paras.get(i));
+            println("MOVE a" + i + " " + getReg(paras.get(i), "v0"));
         }
         if (size > 4) {
-            for (int i=4; i<=size; ++i) {
-                println("PASSARG " + (i-3) + " " + paras.get(i));
+            for (int i=4; i<size; ++i) {
+                println("PASSARG " + (i-3) + " " + getReg(paras.get(i), "v0"));
             }
         }
         //storeS07(1);

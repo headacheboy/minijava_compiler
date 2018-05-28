@@ -12,4 +12,7 @@ public class Liveinterval implements Comparable<Liveinterval> {
     public int compareTo(Liveinterval other) {
         return (start == other.start)?(other.end - end):(start - other.start);
     }
+    public String toString() {
+        return "t: " + tmpnum + " s: " + start + " t: " + end;
+    }
 }
