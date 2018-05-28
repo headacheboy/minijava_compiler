@@ -32,19 +32,44 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
             println("MOVE " + reg + " " + exp);
         }
     }
-    public int storeS07(int stackpos) {
-        for (int i=0; i<=7; ++i) {
-            println("ASTORE s" + i + " (SPILLEDARG " + stackpos + ")");
-            stackpos = stackpos + 1;
+    public void storeS07() {
+        int useStackNum = curpBlock.useStack;
+        int usedRegNum = curpBlock.regCandi.size();
+        int startPos = useStackNum - usedRegNum;
+        for (String regname : curpBlock.regCandi.values()) {
+            println("ASTORE SPILLEDARG " + startPos + " " + regname);
+            startPos++;
         }
-        return stackpos;
     }
-    public int loadS07(int stackpos) {
-        for (int i=7; i>=0; --i) {
-            println("ALOAD s" + i + " (SPILLEDARG " + stackpos + ")");
-            stackpos = stackpos - 1;
+    public void loadParameters() {
+        int paranum = curpBlock.paranum;
+        int useStackNum = curpBlock.useStack;
+        for (int i=0; i<4 && i < paranum; ++i) {
+            if (curpBlock.tmpMap.containsKey(i)) {
+                moveReg(""+i, "a"+i);
+            }
         }
-        return stackpos;
+        if (paranum > 4) {
+            for (int i=4; i<paranum; ++i) {
+                if (curpBlock.tmpMap.containsKey(i)) {
+                    if (curpBlock.regCandi.containsKey(i)) {
+                        println("ALOAD " + getReg(""+i, "") + "SPILLEDARG " + (i-4));
+                    } else {
+                        println("ALOAD v0 SPILLEDARG " + (i-4));
+                        moveReg(""+i, "v0");
+                    }
+                }
+            }
+        }
+    }
+    public void loadS07() {
+        int useStackNum = curpBlock.useStack;
+        int usedRegNum = curpBlock.regCandi.size();
+        int startPos = useStackNum - usedRegNum;
+        for (String regname : curpBlock.regCandi.values()) {
+            println("ALOAD " + regname + " SPILLEDARG " + startPos);
+            startPos++;
+        }
     }
 
     public Object visit(NodeList n, Object argu) {
@@ -143,8 +168,11 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         curFlowGraph = flowGraphHashMap.get(pname); 
         curpBlock = curFlowGraph.pBlock;
         println(pname + " [" + paranum + "][" + curFlowGraph.pBlock.useStack + "][" + curFlowGraph.pBlock.inCall +  "]");
+        storeS07();
+        loadParameters();
         String reg = (String)n.f4.accept(this, argu);
         println("MOVE v0 " + reg);
+        loadS07();
         println("END");
         return _ret;
     }
@@ -326,11 +354,9 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
                 println("PASSARG " + (i-3) + " " + getReg(paras.get(i), "v0"));
             }
         }
-        //storeS07(1);
         //n.f4.accept(this, argu);
         println("CALL " + sexp);
         _ret = "v0";
-        //loadS07(8);
         return _ret;
     }
 

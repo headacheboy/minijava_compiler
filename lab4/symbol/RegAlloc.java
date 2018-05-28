@@ -11,6 +11,10 @@ public class RegAlloc {
     public void updateInterval() {
         for (FlowGraph fg : flowGraphHashMap.values()) {
             ProcedureBlock pBlock = fg.pBlock;
+            // for (Liveinterval liint : pBlock.tmpMap.values()) {
+            //     System.out.println(liint);
+            // }
+            // System.out.println("");
             for (Entry<Integer, FlowBlock> entry : fg.mBlock.entrySet()) {
                 int curLine = entry.getKey();
                 HashSet<Integer> IN = entry.getValue().In;
@@ -66,7 +70,7 @@ public class RegAlloc {
             curpBlock.regCandi.put(curInterval.tmpnum, curpBlock.regCandi.get(spill.tmpnum));
             curpBlock.regCandi.remove(spill.tmpnum);
             curpBlock.regStack.put(spill.tmpnum, "SPILLARG " + curspillIdx);
-            curactive.removeElement(spill_idx);
+            curactive.remove(spill_idx);
             curactive.add(intervalId);
         } else {
             curpBlock.regStack.put(curInterval.tmpnum, "SPILLARG " + curspillIdx);
