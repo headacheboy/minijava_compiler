@@ -26,7 +26,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         int tmpNum = Integer.parseInt(tmpNumStr);
         if (curpBlock.regStack.containsKey(tmpNum)) {
             println("MOVE v0 " + exp);
-            println("ASTORE " + curpBlock.regStack.get(tmpNum) + "v0");
+            println("ASTORE " + curpBlock.regStack.get(tmpNum) + " v0");
         } else {
             String reg = getReg(tmpNumStr, "");
             println("MOVE " + reg + " " + exp);
@@ -53,7 +53,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
             for (int i=4; i<paranum; ++i) {
                 if (curpBlock.tmpMap.containsKey(i)) {
                     if (curpBlock.regCandi.containsKey(i)) {
-                        println("ALOAD " + getReg(""+i, "") + "SPILLEDARG " + (i-4));
+                        println("ALOAD " + getReg(""+i, "") + " SPILLEDARG " + (i-4));
                     } else {
                         println("ALOAD v0 SPILLEDARG " + (i-4));
                         moveReg(""+i, "v0");

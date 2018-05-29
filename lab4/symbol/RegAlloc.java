@@ -97,6 +97,9 @@ public class RegAlloc {
             curactive = active;
             int curIntervalnum = 0;
             curspillIdx = 0;
+            if (curpBlock.paranum > 4) {
+                curspillIdx = curpBlock.paranum - 4;
+            }
             int R = 18; // t0-9; s0-7
             boolean[] usedR = new boolean[R];
             curusedR = usedR;
@@ -128,7 +131,7 @@ public class RegAlloc {
             for (Entry<Integer, String> entry : fg.pBlock.regCandi.entrySet()) {
                 int r = Integer.parseInt(entry.getValue());
                 String regname;
-                if (r <= 10) {
+                if (r < 10) {
                     regname = "t" + r;
                 } else {
                     regname = "s" + (r-10);
