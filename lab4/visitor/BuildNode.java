@@ -361,7 +361,7 @@ public class BuildNode implements GJNoArguVisitor<String> {
             if (tmpnum < curPB.paranum) {
                 // this TEMP is used as a parameter
                 // so living from 0 to here (maybe)
-                curPB.tmpMap.put(tmpnum, new Liveinterval(tmpnum, 1, curLineNum));
+                curPB.tmpMap.put(tmpnum, new Liveinterval(tmpnum, 0, curLineNum));
             } else {
                 // think this TEMP is living at this line
                 curPB.tmpMap.put(tmpnum, new Liveinterval(tmpnum, curLineNum, curLineNum));

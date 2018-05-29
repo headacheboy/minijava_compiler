@@ -24,6 +24,9 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     }
     public void moveReg(String tmpNumStr, String exp) {
         int tmpNum = Integer.parseInt(tmpNumStr);
+        if (curpBlock.regSkip.contains(tmpNum)) {
+            return;
+        }
         if (curpBlock.regStack.containsKey(tmpNum)) {
             println("MOVE v0 " + exp);
             println("ASTORE " + curpBlock.regStack.get(tmpNum) + " v0");

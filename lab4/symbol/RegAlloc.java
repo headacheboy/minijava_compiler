@@ -49,7 +49,7 @@ public class RegAlloc {
                 int curTmpNum = curlives.get(curj).tmpnum;
                 if (curpBlock.regCandi.containsKey(curTmpNum)) {
                     int usedReg = Integer.parseInt(curpBlock.regCandi.get(curTmpNum));
-                    // if (curInterval.tmpnum == 340) {
+                    // if (curInterval.tmpnum == 26) {
                     //     System.out.println("remove " + curTmpNum + " " + usedReg);
                     // }
                     curusedR[usedReg] = false;
@@ -95,11 +95,12 @@ public class RegAlloc {
                 curlives.add(liint);
             }
             Collections.sort(curlives);
-            // System.out.println(fg.name);
-            // for (Liveinterval liint : curlives) {
-            //     System.out.println(liint);
+            // if (curpBlock.pname.equals("Tree_Init")) {
+            //     for (Liveinterval liint : curlives) {
+            //         System.out.println(liint);
+            //     }
+            //     System.out.println("");
             // }
-            // System.out.println("");
 
             Vector<Integer> active = new Vector<Integer>();
             curactive = active;
@@ -112,6 +113,10 @@ public class RegAlloc {
             boolean[] usedR = new boolean[R];
             curusedR = usedR;
             for (Liveinterval liint : curlives) { // increasing start point
+                if (liint.start == liint.end) {
+                    curpBlock.regSkip.add(liint.tmpnum);
+                    continue;
+                }
                 expireOld(curIntervalnum);
                 if (curactive.size() == R) {
                     spillInterval(curIntervalnum);
@@ -145,6 +150,9 @@ public class RegAlloc {
                     regname = "s" + (r-10);
                 }
                 regCandi.put(entry.getKey(), regname);
+                // if (curpBlock.pname.equals("Tree_Init")) {
+                //     System.out.println(entry.getKey() + " " + regname);
+                // }
             }
             curpBlock.regCandi = regCandi;
         }

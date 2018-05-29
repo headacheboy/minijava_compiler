@@ -18,11 +18,11 @@ class Main
             InputStream in = new FileInputStream(args[0]);
             Node root = new SpigletParser(in).Goal();
             root.accept(new BuildNode(flowGraphHashMap));
-            System.out.println(flowGraphHashMap.get("QS_Init").No);
+            System.out.println(flowGraphHashMap.get("Tree_Init").No);
             root.accept(new BuildNode2(flowGraphHashMap));
             Liveness liveness = new Liveness();
             liveness.analysis(flowGraphHashMap);
-            currentFlowGraph = flowGraphHashMap.get("QS_Init");
+            currentFlowGraph = flowGraphHashMap.get("Tree_Init");
             for (Entry<Integer, FlowBlock> entry: currentFlowGraph.mBlock.entrySet())
             {
                 HashSet<Integer> left = entry.getValue().left, right = entry.getValue().right, IN = entry.getValue().In,
