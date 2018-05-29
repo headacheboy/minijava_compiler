@@ -283,7 +283,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         String tmp1 = (String)n.f1.accept(this, argu);
         String reg2 = getReg((String)n.f2.accept(this, argu), "v1");
         int bias = Integer.parseInt((String)n.f3.accept(this, argu));
-        if (curpBlock.regStack.containsKey(tmp1)) {
+        if (curpBlock.regStack.containsKey(Integer.parseInt(tmp1))) {
             println("HLOAD v1 " + reg2 + " " + bias);
             moveReg(tmp1, "v1");
         } else {
@@ -357,9 +357,6 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(Call n, Object argu) {
         Object _ret=null;
-        //n.f0.accept(this, argu);
-        String sexp = (String)n.f1.accept(this, argu);
-        //n.f2.accept(this, argu);
         Vector<String> paras = (Vector<String>)n.f3.accept(this, argu);
         int size = paras.size();
         for (int i=0; i<size && i<=3; ++i) {
@@ -370,6 +367,9 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
                 println("PASSARG " + (i-3) + " " + getReg(paras.get(i), "v0"));
             }
         }
+        //n.f0.accept(this, argu);
+        String sexp = (String)n.f1.accept(this, argu);
+        //n.f2.accept(this, argu);
         //n.f4.accept(this, argu);
         println("CALL " + sexp);
         _ret = "v0";
@@ -396,7 +396,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     public Object visit(BinOp n, Object argu) {
         Object _ret=null;
         String op = (String)n.f0.accept(this, argu);
-        String reg = getReg((String)n.f1.accept(this, argu), "v0");
+        String reg = getReg((String)n.f1.accept(this, argu), "v1");
         String sexp = (String)n.f2.accept(this, argu);
         _ret = op + " " + reg + " " + sexp;
         return _ret;

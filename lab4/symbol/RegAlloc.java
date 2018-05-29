@@ -49,9 +49,6 @@ public class RegAlloc {
                 int curTmpNum = curlives.get(curj).tmpnum;
                 if (curpBlock.regCandi.containsKey(curTmpNum)) {
                     int usedReg = Integer.parseInt(curpBlock.regCandi.get(curTmpNum));
-                    // if (curInterval.tmpnum == 26) {
-                    //     System.out.println("remove " + curTmpNum + " " + usedReg);
-                    // }
                     curusedR[usedReg] = false;
                 }
             }
@@ -60,21 +57,18 @@ public class RegAlloc {
     public void spillInterval(int intervalId) {
         Liveinterval spill = curlives.get(curactive.get(0));
         int spill_idx = 0;
+        int cur_idx = 0;
         for (int i : curactive) {
             Liveinterval mapInterval = curlives.get(i);
+            // System.out.println(i + " " + mapInterval);
             if (mapInterval.end > spill.end) {
                 spill = mapInterval;
-                spill_idx = i;
+                spill_idx = cur_idx;
             }
+            cur_idx++;
         }
         Liveinterval curInterval = curlives.get(intervalId);
         if (spill.end > curInterval.end) {
-            // if (curpBlock.pname.equals("QS_Init")) {
-            //     for (Entry<Integer, String> entry : curpBlock.regCandi.entrySet()) {
-            //         int r = Integer.parseInt(entry.getValue());
-            //         System.out.println(entry.getKey() + " " + entry.getValue());
-            //     }
-            // }
             curpBlock.regCandi.put(curInterval.tmpnum, curpBlock.regCandi.get(spill.tmpnum));
             curpBlock.regCandi.remove(spill.tmpnum);
             curpBlock.regStack.put(spill.tmpnum, "SPILLEDARG " + curspillIdx);
@@ -95,12 +89,6 @@ public class RegAlloc {
                 curlives.add(liint);
             }
             Collections.sort(curlives);
-            // if (curpBlock.pname.equals("Tree_Init")) {
-            //     for (Liveinterval liint : curlives) {
-            //         System.out.println(liint);
-            //     }
-            //     System.out.println("");
-            // }
 
             Vector<Integer> active = new Vector<Integer>();
             curactive = active;
@@ -115,6 +103,7 @@ public class RegAlloc {
             for (Liveinterval liint : curlives) { // increasing start point
                 if (liint.start == liint.end) {
                     curpBlock.regSkip.add(liint.tmpnum);
+                    curIntervalnum++;
                     continue;
                 }
                 expireOld(curIntervalnum);
@@ -124,12 +113,6 @@ public class RegAlloc {
                     for (int r=0; r<R; ++r) {
                         if (!curusedR[r]) {
                             curusedR[r] = true;
-                            // String regname;
-                            // if (r < 10) {
-                            //     regname = "t" + r;
-                            // } else {
-                            //     regname = "s" + (r-10);
-                            // }
                             curpBlock.regCandi.put(liint.tmpnum, ""+r);
                             break;
                         }
@@ -149,9 +132,6 @@ public class RegAlloc {
                     regname = "s" + (r-10);
                 }
                 regCandi.put(entry.getKey(), regname);
-                // if (curpBlock.pname.equals("Tree_Init")) {
-                //     System.out.println(entry.getKey() + " " + regname);
-                // }
             }
             curpBlock.regCandi = regCandi;
             for (String regname : curpBlock.regCandi.values()) {
