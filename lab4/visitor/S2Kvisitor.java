@@ -48,9 +48,9 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     }
     public void storeS07() {
         int useStackNum = curpBlock.useStack;
-        int usedRegNum = curpBlock.regCandi.size();
+        int usedRegNum = curpBlock.regSave.size();
         int startPos = useStackNum - usedRegNum;
-        for (String regname : curpBlock.regCandi.values()) {
+        for (String regname : curpBlock.regSave) {
             println("ASTORE SPILLEDARG " + startPos + " " + regname);
             startPos++;
         }
@@ -68,7 +68,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
                 if (curpBlock.tmpMap.containsKey(i)) {
                     if (curpBlock.regCandi.containsKey(i)) {
                         println("ALOAD " + getReg(""+i, "") + " SPILLEDARG " + (i-4));
-                    } else {
+                    } else if (curpBlock.regStack.containsKey(i)) {
                         println("ALOAD v0 SPILLEDARG " + (i-4));
                         moveReg(""+i, "v0");
                     }
@@ -78,9 +78,9 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     }
     public void loadS07() {
         int useStackNum = curpBlock.useStack;
-        int usedRegNum = curpBlock.regCandi.size();
+        int usedRegNum = curpBlock.regSave.size();
         int startPos = useStackNum - usedRegNum;
-        for (String regname : curpBlock.regCandi.values()) {
+        for (String regname : curpBlock.regSave) {
             println("ALOAD " + regname + " SPILLEDARG " + startPos);
             startPos++;
         }

@@ -138,7 +138,6 @@ public class RegAlloc {
                 }
                 curIntervalnum++;
             }
-            curpBlock.useStack = curspillIdx + curpBlock.regCandi.size();
             // System.out.println(fg.name);
             HashMap<Integer, String> regCandi = new HashMap<Integer, String>();
             for (Entry<Integer, String> entry : fg.pBlock.regCandi.entrySet()) {
@@ -155,6 +154,12 @@ public class RegAlloc {
                 // }
             }
             curpBlock.regCandi = regCandi;
+            for (String regname : curpBlock.regCandi.values()) {
+                if (!curpBlock.regSave.contains(regname)) {
+                    curpBlock.regSave.add(regname);
+                }
+            }
+            curpBlock.useStack = curspillIdx + curpBlock.regSave.size();
         }
     }
 }

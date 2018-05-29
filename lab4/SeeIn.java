@@ -7,7 +7,7 @@ import symbol.*;
 import visitor.*;
 import syntaxtree.*;
 
-class Main
+class SeeIn
 {
     public static void main(String []args)
     {

@@ -11,6 +11,7 @@ public class ProcedureBlock {
 
     public HashMap<Integer, String> regCandi = new HashMap<Integer, String>();
     public Vector<Integer> regSkip = new Vector<Integer>();
+    public Vector<String> regSave = new Vector<String>();
     public HashMap<Integer, String> regStack = new HashMap<Integer, String>();
     public HashMap<Integer, Liveinterval> tmpMap = new HashMap<Integer, Liveinterval>();
     public ProcedureBlock() {
