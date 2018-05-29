@@ -5,8 +5,10 @@ import java.util.*;
 
 public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     HashMap<String, FlowGraph> flowGraphHashMap = new HashMap<String, FlowGraph>();
+    HashMap<String, String> globalLabel = new HashMap<String, String>();
     ProcedureBlock curpBlock; // this stores the current procedure
     FlowGraph curFlowGraph; // this stores the current procedure
+    int curLabel = 0;
     public void println(String str) {
         System.out.println(str);
     }
@@ -34,6 +36,15 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
             String reg = getReg(tmpNumStr, "");
             println("MOVE " + reg + " " + exp);
         }
+    }
+    public String newLabel(String oldLabel) {
+        if (globalLabel.containsKey(oldLabel)) {
+            return globalLabel.get(oldLabel);
+        }
+        String newL = "L" + curLabel;
+        curLabel ++;
+        globalLabel.put(oldLabel, newL);
+        return newL;
     }
     public void storeS07() {
         int useStackNum = curpBlock.useStack;
@@ -102,7 +113,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     public Object visit(NodeOptional n, Object argu) {
         if ( n.present() ) {
             Object _ret = n.node.accept(this,argu);
-            print(_ret + " "); // (Label)?
+            print(newLabel((String)_ret) + " "); // (Label)?
             return _ret;
         }
         else
@@ -138,6 +149,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         //n.f0.accept(this, argu);
         curFlowGraph = flowGraphHashMap.get("MAIN"); 
         curpBlock = curFlowGraph.pBlock;
+        globalLabel.clear();
         println("MAIN [0][" + curpBlock.useStack + "][" + curpBlock.inCall + "]");
         n.f1.accept(this, argu);
         //n.f2.accept(this, argu);
@@ -170,6 +182,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         int paranum = Integer.parseInt((String)n.f2.accept(this, argu));
         curFlowGraph = flowGraphHashMap.get(pname); 
         curpBlock = curFlowGraph.pBlock;
+        globalLabel.clear();
         println(pname + " [" + paranum + "][" + curFlowGraph.pBlock.useStack + "][" + curFlowGraph.pBlock.inCall +  "]");
         storeS07();
         loadParameters();
@@ -226,7 +239,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         //n.f0.accept(this, argu);
         String reg = getReg((String)n.f1.accept(this, argu), "v0");
         String label = (String)n.f2.accept(this, argu);
-        println("CJUMP " + reg + " " + label);
+        println("CJUMP " + reg + " " + newLabel(label));
         return _ret;
     }
 
@@ -238,7 +251,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         Object _ret=null;
         //n.f0.accept(this, argu);
         String label = (String)n.f1.accept(this, argu);
-        println("JUMP " + label);
+        println("JUMP " + newLabel(label));
         return _ret;
     }
 
@@ -422,6 +435,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         if (n.f0.which == 0) {
             _ret = getReg((String)_ret, "v0");
         }
+        // when n.f0.which == 2, it's a function's name
         return _ret;
     }
 
