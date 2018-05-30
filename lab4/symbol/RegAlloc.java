@@ -11,10 +11,6 @@ public class RegAlloc {
     public void updateInterval() {
         for (FlowGraph fg : flowGraphHashMap.values()) {
             ProcedureBlock pBlock = fg.pBlock;
-            // for (Liveinterval liint : pBlock.tmpMap.values()) {
-            //     System.out.println(liint);
-            // }
-            // System.out.println("");
             for (Entry<Integer, FlowBlock> entry : fg.mBlock.entrySet()) {
                 int curLine = entry.getKey();
                 if (curLine == 0) {
@@ -34,10 +30,11 @@ public class RegAlloc {
         }
     }
     ProcedureBlock curpBlock;
-    Vector<Integer> curactive;
+    Vector<Integer> curactive; // store index of curlives
     Vector<Liveinterval> curlives;
     boolean[] curusedR;
     int curspillIdx;
+    // remove old reg
     public void expireOld(int intervalId) {
         Liveinterval curInterval = curlives.get(intervalId);
         int cursize = curactive.size();
@@ -54,13 +51,13 @@ public class RegAlloc {
             }
         }
     }
+    // replace a reg or add it to stack
     public void spillInterval(int intervalId) {
         Liveinterval spill = curlives.get(curactive.get(0));
         int spill_idx = 0;
         int cur_idx = 0;
         for (int i : curactive) {
             Liveinterval mapInterval = curlives.get(i);
-            // System.out.println(i + " " + mapInterval);
             if (mapInterval.end > spill.end) {
                 spill = mapInterval;
                 spill_idx = cur_idx;
@@ -95,9 +92,10 @@ public class RegAlloc {
             int curIntervalnum = 0;
             curspillIdx = 0;
             if (curpBlock.paranum > 4) {
+                // store more than 4 parameters
                 curspillIdx = curpBlock.paranum - 4;
             }
-            int R = 18; // t0-9; s0-7
+            int R = 18; // t0-9, s0-7; used them equally
             boolean[] usedR = new boolean[R];
             curusedR = usedR;
             for (Liveinterval liint : curlives) { // increasing start point
@@ -121,7 +119,7 @@ public class RegAlloc {
                 }
                 curIntervalnum++;
             }
-            // System.out.println(fg.name);
+            // Number to reg name
             HashMap<Integer, String> regCandi = new HashMap<Integer, String>();
             for (Entry<Integer, String> entry : fg.pBlock.regCandi.entrySet()) {
                 int r = Integer.parseInt(entry.getValue());

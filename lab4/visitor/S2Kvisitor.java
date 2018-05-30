@@ -7,8 +7,8 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     HashMap<String, FlowGraph> flowGraphHashMap = new HashMap<String, FlowGraph>();
     HashMap<String, String> globalLabel = new HashMap<String, String>();
     ProcedureBlock curpBlock; // this stores the current procedure
-    FlowGraph curFlowGraph; // this stores the current procedure
-    int curLabel = 0;
+    FlowGraph curFlowGraph; // this stores the current procedure's graph
+    int curLabel = 0; // global
     public void println(String str) {
         System.out.println(str);
     }
@@ -27,6 +27,7 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
     public void moveReg(String tmpNumStr, String exp) {
         int tmpNum = Integer.parseInt(tmpNumStr);
         if (curpBlock.regSkip.contains(tmpNum)) {
+            // skip unused TEMP
             return;
         }
         if (curpBlock.regStack.containsKey(tmpNum)) {
@@ -183,13 +184,13 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         int paranum = Integer.parseInt((String)n.f2.accept(this, argu));
         curFlowGraph = flowGraphHashMap.get(pname); 
         curpBlock = curFlowGraph.pBlock;
-        globalLabel.clear();
+        globalLabel.clear(); // make sure it's global
         println(pname + " [" + paranum + "][" + curFlowGraph.pBlock.useStack + "][" + curFlowGraph.pBlock.inCall +  "]");
-        storeS07();
+        storeS07(); // store which will be used here
         loadParameters();
         String reg = (String)n.f4.accept(this, argu);
         println("MOVE v0 " + reg);
-        loadS07();
+        loadS07(); // reload
         println("END");
         return _ret;
     }

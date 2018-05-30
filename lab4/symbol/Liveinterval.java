@@ -1,6 +1,7 @@
 package symbol;
 
 public class Liveinterval implements Comparable<Liveinterval> {
+    // this stores TEMP id and its start lines and end lines in a procedure
     public int tmpnum;
     public int start;
     public int end;
@@ -9,6 +10,7 @@ public class Liveinterval implements Comparable<Liveinterval> {
         start = s;
         end = e;
     }
+    // will sort according to its start
     public int compareTo(Liveinterval other) {
         return (start == other.start)?(end - other.end):(start - other.start);
     }
