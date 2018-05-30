@@ -150,7 +150,8 @@ public class S2Kvisitor extends GJDepthFirst<Object, Object> {
         curFlowGraph = flowGraphHashMap.get("MAIN"); 
         curpBlock = curFlowGraph.pBlock;
         globalLabel.clear();
-        println("MAIN [0][" + curpBlock.useStack + "][" + curpBlock.inCall + "]");
+        // MAIN don't need to save registers
+        println("MAIN [0][" + (curpBlock.useStack - curpBlock.regSave.size()) + "][" + curpBlock.inCall + "]");
         n.f1.accept(this, argu);
         //n.f2.accept(this, argu);
         println("END");
