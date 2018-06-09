@@ -2,4 +2,6 @@
 tmp.pg
 tmp.spg
 tmp.kg
+tmp.s
+tmp_*.s
 *~
