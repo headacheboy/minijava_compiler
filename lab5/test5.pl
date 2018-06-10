@@ -26,6 +26,7 @@ for my $i (@files) {
 }
 sub equal_list {
     my ($a, $b) = @_;
+    return 0 if @$a != @$b;
     for (my $i=0; $i<@$a; ++$i) {
         if (@$a[$i] != @$b[$i]) {
             return 0;

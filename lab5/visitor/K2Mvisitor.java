@@ -2,14 +2,24 @@ package visitor;
 import syntaxtree.*;
 import java.util.*;
 
-/**
- * Provides default methods which visit each node in the tree in depth-first
- * order.  Your visitors may extend this class.
- */
 public class K2Mvisitor extends GJNoArguDepthFirst<String> {
-    //
-    // Auto class visitors--probably don't need to be overridden.
-    //
+    /*
+     *    |args (more than 4) stored in caller <- 0($fp)
+     * stack                                   <- fp
+     *    |ra                                  <- -4($fp)
+     *    |last fp (not in main)
+     *    |SPILLEDARG n
+     *    |SPILLEDARG ...
+     *    |SPILLEDARG 0
+     *    |argn
+     *    | ...
+     *    |arg1
+     *    |arg0 : for callee (more than 4)     <- sp, 0($sp)
+     * procedure [n1][n2][n3]
+     *    stack space = [2(ra fp) + n2 + (n3>4)?(n3-4):0] * 4
+     * main [n1][n2][n3]
+     *    stack space = [1(ra) + n2 + (n3>4)?(n3-4):0] * 4
+     */
     void println(String str) {
         System.out.println(str);
     }
@@ -46,7 +56,7 @@ public class K2Mvisitor extends GJNoArguDepthFirst<String> {
     public String visit(NodeOptional n) {
         if ( n.present() ) {
             String label = n.node.accept(this);
-            print(label + ": ");
+            print(label + ": "); // Label:
             return n.node.accept(this);
         } else
             return null;
@@ -95,6 +105,7 @@ public class K2Mvisitor extends GJNoArguDepthFirst<String> {
         curStack = spill;
         int passargs = Integer.parseInt(n.f8.accept(this));
         curCall = passargs;
+        // see comments line 6-22
         int stacknum = 4;
         stacknum += (spill * 4);
         if (passargs > 4) {
@@ -142,6 +153,7 @@ public class K2Mvisitor extends GJNoArguDepthFirst<String> {
         println("sw $fp, -8($sp)");
         println("move $fp, $sp");
         curArgs = Integer.parseInt(n.f2.accept(this));
+        // see comments line 6-22
         int stacknum = 8;
         int spill = Integer.parseInt(n.f5.accept(this));
         curStack = spill;
@@ -300,8 +312,8 @@ public class K2Mvisitor extends GJNoArguDepthFirst<String> {
         } else if (which == 1) { // int
             println("li $a0, " + sexps[0]);
         } else { // label
-            // TODO
-            println("print label");
+            // seems impossible
+            println("move $a0, " + sexps[0]);
         }
         println("jal _print");
         return _ret;
@@ -318,9 +330,11 @@ public class K2Mvisitor extends GJNoArguDepthFirst<String> {
         int spill = Integer.parseInt(n.f2.accept(this));
         int spill4 = 4 * spill;
         if (curArgs > 4 && (spill < (curArgs - 4))) {
+            // get args from caller's stack
             println("lw " + reg + ", " + spill4 + "($fp)");
             return _ret;
         }
+        // see comments line 6-22
         int startpos = spill4;
         if (curCall > 4) {
             startpos += (4 * (curCall - 4));
@@ -339,6 +353,7 @@ public class K2Mvisitor extends GJNoArguDepthFirst<String> {
         int spill = Integer.parseInt(n.f1.accept(this));
         String reg = n.f2.accept(this);
         int spill4 = 4 * spill;
+        // see ALoadStmt
         if (curArgs > 4 && (spill < (curArgs - 4))) {
             println("sw " + reg + ", " + spill4 + "($fp)");
             return _ret;
@@ -372,15 +387,6 @@ public class K2Mvisitor extends GJNoArguDepthFirst<String> {
         String _ret=null;
         String sexp = n.f1.accept(this);
         String []sexps = sexp.split(",");
-        //int which = Integer.parseInt(sexps[1]);
-        //if (which == 0) { // reg
-        //    println("move $a0, " + sexps[0]);
-        //} else if (which == 1) { // int
-        //    println("li $a0, " + sexps[0]);
-        //} else { // label
-        //    // TODO
-        //    println("print label");
-        //}
         println("jalr " + sexps[0]);
         return _ret;
     }
@@ -410,8 +416,7 @@ public class K2Mvisitor extends GJNoArguDepthFirst<String> {
         } else if (which == 1) { // int
             println("li $a0, " + sexps[0]);
         } else { // label
-            // TODO
-            println("print label");
+            // seems impossible
         }
         println("jal _halloc");
         return _ret;
@@ -428,6 +433,7 @@ public class K2Mvisitor extends GJNoArguDepthFirst<String> {
         String reg = n.f1.accept(this);
         String exp = n.f2.accept(this);
         int which = n.f0.f0.which;
+        // return op for MoveStmt
         _ret = ops[which] + "," + reg + "," + exp;
         return _ret;
     }
@@ -462,6 +468,7 @@ public class K2Mvisitor extends GJNoArguDepthFirst<String> {
     public String visit(SimpleExp n) {
         String _ret=null;
         int which = n.f0.which;
+        // return which; will split it
         _ret = n.f0.accept(this) + "," + which;
         return _ret;
     }
@@ -518,5 +525,3 @@ public class K2Mvisitor extends GJNoArguDepthFirst<String> {
     }
 
 }
-
-//       |     PassArgStmt
