@@ -272,7 +272,7 @@ public class TypeCheckVisitor2 extends GJDepthFirst<MType, MType> {
             System.out.println(((MIdentifier)classType).getName());
         }
         MClass hereClass = allClassList.getClass(((MIdentifier)classType).getType());
-        if (!hereClass) {
+        if (hereClass == null) {
             errorPrint("no class");
         }
         if (debug) {
