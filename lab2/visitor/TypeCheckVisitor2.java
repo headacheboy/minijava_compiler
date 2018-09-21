@@ -236,6 +236,35 @@ public class TypeCheckVisitor2 extends GJDepthFirst<MType, MType> {
         }
         return new MType("int");
     }
+    /**
+     * f0 -> Identifier()
+     * f1 -> "["
+     * f2 -> Expression()
+     * f3 -> "]"
+     * f4 -> "="
+     * f5 -> Expression()
+     * f6 -> ";"
+     */
+    public MType visit(ArrayAssignmentStatement n, MType argu) {
+        R _ret=null;
+        MType lhs = n.f0.accept(this, argu);
+        if (!lhs.getType().equals("array")) {
+            errorPrint("expect array, " + "but get " + ((MIdentifier)lhs).getName() + " : " + lhs.getType());
+        }
+        n.f1.accept(this, argu);
+        MType index = n.f2.accept(this, argu);
+        if (!index.getType().equals("int")) {
+            errorPrint("array[should be int], but get " + index.getType());
+        }
+        n.f3.accept(this, argu);
+        n.f4.accept(this, argu);
+        MType exp = n.f5.accept(this, argu);
+        if (!exp.getType().equals("int")) {
+            errorPrint("array[n] = int, but get " + exp.getType());
+        }
+        n.f6.accept(this, argu);
+        return _ret;
+    }
     public MType visit(ArrayLookup n, MType argu) {
         MType lhs = n.f0.accept(this, argu);
         if (!lhs.getType().equals("array")) {
